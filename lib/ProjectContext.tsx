@@ -50,7 +50,8 @@ const SUPER_ADMIN_OBJ: Staff = {
   role_type: 'Admin', 
   password: 'EDT', 
   active_tasks: 0, 
-  weekly_capacity: 99.0
+  weekly_capacity: 99.0,
+  gender: 'Other'
 };
 
 const DEFAULT_PERMISSIONS: Record<UserRole, RolePermissions> = {

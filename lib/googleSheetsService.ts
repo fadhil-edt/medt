@@ -144,8 +144,8 @@ function sendAssignmentEmail(task) {
 
 import { Project, Task, Staff, ClaimMilestone } from '../types';
 
-// Replace with your current Deployed Web App URL
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzw0Ii9ewnO6iD4la5eX0CylqQirjepiOLV5dL6VPPuULcKzOrrYnKnYkpD2Q8VRUZv/exec'; 
+// Replace with your current Deployed Web App URL from environment variables
+const SCRIPT_URL = import.meta.env.VITE_GOOGLE_SHEETS_SCRIPT_URL || ''; 
 
 class GoogleSheetsService {
   private static instance: GoogleSheetsService;

@@ -87,6 +87,7 @@ export interface Staff {
   weekly_capacity: number;
   avatar_seed?: string;
   avatar_url?: string;
+  gender?: 'Male' | 'Female' | 'Other';
 }
 
 export interface RolePermissions {

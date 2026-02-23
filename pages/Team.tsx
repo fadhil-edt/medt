@@ -11,8 +11,37 @@ const Team: React.FC = () => {
   const [view, setView] = useState<'card' | 'table'>('card');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Staff | null>(null);
-  const [formData, setFormData] = useState<Partial<Staff>>({ name: '', email: '', role: '', role_type: 'Production Dev Team', password: '', weekly_capacity: 5.0 });
+  const [formData, setFormData] = useState<Partial<Staff>>({ 
+    name: '', 
+    email: '', 
+    role: '', 
+    role_type: 'Production Dev Team', 
+    password: '', 
+    weekly_capacity: 5.0,
+    gender: 'Other'
+  });
   const [showPassword, setShowPassword] = useState(false);
+
+  const generateAvatar = (name: string, gender?: string) => {
+    const seed = Math.random().toString(36).substring(7);
+    let style = 'notionists';
+    let params = '';
+    
+    if (gender === 'Male') {
+      style = 'avataaars';
+      params = '&top=shortHair,shortCurly,shortFlat,shortRound,shortWaved,sides,theCaesar';
+    } else if (gender === 'Female') {
+      style = 'avataaars';
+      params = '&top=longHair,bigHair,bob,curly,curvy,dreads,frida,frizzle';
+    }
+    
+    return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}${params}`;
+  };
+
+  const handleRegenerateAvatar = () => {
+    const newAvatar = generateAvatar(formData.name || 'user', formData.gender);
+    setFormData({ ...formData, avatar_url: newAvatar });
+  };
 
   const staffWithStats = useMemo(() => staff.map(member => ({ 
     ...member, 
@@ -21,8 +50,13 @@ const Team: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingMember) updateStaff({ ...editingMember, ...formData } as Staff);
-    else addStaff({ id: Math.random().toString(36).substr(2, 9), ...formData, active_tasks: 0 } as Staff);
+    const finalData = { ...formData };
+    if (!finalData.avatar_url) {
+      finalData.avatar_url = generateAvatar(finalData.name || 'user', finalData.gender);
+    }
+    
+    if (editingMember) updateStaff({ ...editingMember, ...finalData } as Staff);
+    else addStaff({ id: Math.random().toString(36).substr(2, 9), ...finalData, active_tasks: 0 } as Staff);
     setIsModalOpen(false);
   };
 
@@ -207,13 +241,62 @@ const Team: React.FC = () => {
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all"><X className="w-6 h-6 text-gray-400" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-8 space-y-5 max-h-[75vh] overflow-y-auto">
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                  <input required className="w-full pl-12 pr-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none text-slate-800 dark:text-white font-bold transition-all" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative group">
+                  <div className="w-24 h-24 bg-gray-100 dark:bg-slate-800 rounded-3xl flex items-center justify-center text-gray-400 shadow-inner overflow-hidden border-2 border-dashed border-gray-200 dark:border-slate-700 group-hover:border-indigo-500 transition-all">
+                    {formData.avatar_url ? (
+                      <img src={formData.avatar_url} className="w-full h-full object-cover" alt="Preview" />
+                    ) : (
+                      <User className="w-10 h-10 opacity-20" />
+                    )}
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={handleRegenerateAvatar}
+                    className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 transition-all active:scale-90"
+                    title="Regenerate Avatar"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-4">Profile Identity</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                    <input required className="w-full pl-12 pr-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none text-slate-800 dark:text-white font-bold transition-all" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  </div>
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">Gender</label>
+                  <select 
+                    className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none text-slate-800 dark:text-white font-bold transition-all appearance-none cursor-pointer" 
+                    value={formData.gender || 'Other'} 
+                    onChange={e => {
+                      const newGender = e.target.value as any;
+                      const newAvatar = generateAvatar(formData.name || 'user', newGender);
+                      setFormData({...formData, gender: newGender, avatar_url: newAvatar});
+                    }}
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">User Level</label>
+                  <select className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none text-slate-800 dark:text-white font-bold transition-all appearance-none cursor-pointer" value={formData.role_type} onChange={e => setFormData({...formData, role_type: e.target.value as UserRole})}>
+                    {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+              </div>
+
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">Work Email</label>
                 <div className="relative">
@@ -221,11 +304,10 @@ const Team: React.FC = () => {
                   <input required type="email" className="w-full pl-12 pr-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none text-slate-800 dark:text-white font-bold transition-all" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">Role Title</label><input required className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none text-slate-800 dark:text-white font-bold transition-all" value={formData.role || ''} onChange={e => setFormData({...formData, role: e.target.value})} /></div>
-                <div><label className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">User Level</label><select className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none text-slate-800 dark:text-white font-bold transition-all appearance-none cursor-pointer" value={formData.role_type} onChange={e => setFormData({...formData, role_type: e.target.value as UserRole})}>
-                  {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
-                </select></div>
+              
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">Role Title</label>
+                <input required className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none text-slate-800 dark:text-white font-bold transition-all" value={formData.role || ''} onChange={e => setFormData({...formData, role: e.target.value})} />
               </div>
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase block mb-2 tracking-widest">Password</label>
