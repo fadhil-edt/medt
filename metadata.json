@@ -1,0 +1,5 @@
+{
+  "name": "EDT PM & OPS Tools",
+  "description": "A soft-UI project management dashboard featuring Kanban boards, team workload tracking, and financial summaries.",
+  "requestFramePermissions": []
+}

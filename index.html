@@ -1,0 +1,79 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EDT Dashboard</title>
+    <!-- Import Fragment Mono Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Fragment Mono"', 'monospace'],
+              mono: ['"Fragment Mono"', 'monospace'],
+            },
+            colors: {
+              primary: '#1061C3',
+            },
+            animation: {
+              'progress': 'progress 4s linear forwards',
+            },
+            keyframes: {
+              progress: {
+                '0%': { width: '0%' },
+                '100%': { width: '100%' }
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <script type="importmap">
+    {
+      "imports": {
+        "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+        "react/": "https://esm.sh/react@^19.2.4/",
+        "react": "https://esm.sh/react@^19.2.4",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+        "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0"
+      }
+    }
+    </script>
+    <style>
+      body {
+        font-family: 'Fragment Mono', monospace;
+        transition: background-color 0.3s ease;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      @keyframes progress {
+        from { width: 0%; }
+        to { width: 100%; }
+      }
+      .animate-progress-bar {
+        animation: progress 4s linear forwards;
+      }
+      
+      /* Ensure everything inherits the monospace font for a consistent technical aesthetic */
+      * {
+        font-family: 'Fragment Mono', monospace !important;
+      }
+    </style>
+  </head>
+  <body class="bg-[#F4F7FE] dark:bg-slate-950">
+    <div id="root"></div>
+  </body>
+</html>
