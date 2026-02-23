@@ -199,24 +199,7 @@ const Login: React.FC = () => {
         </div>
       </div>
 
-      {/* Demo Credentials Reveal */}
-      <div className="fixed bottom-8 right-8 bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl border border-gray-100 dark:border-slate-800 max-w-[280px] animate-in slide-in-from-right-4 duration-1000">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-2 h-2 rounded-full bg-blue-500" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Entry Directory</p>
-        </div>
-        <div className="space-y-4">
-          <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700">
-            <p className="text-[8px] font-black text-blue-500 uppercase mb-1 italic">Admin Hub Access</p>
-            <p className="text-[10px] font-bold text-slate-700 dark:text-white">User: superadmin</p>
-            <p className="text-[10px] font-bold text-slate-700 dark:text-white">Pass: EDT</p>
-          </div>
-          <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700">
-            <p className="text-[8px] font-black text-blue-400 uppercase mb-1 italic">Simulated SSO</p>
-            <p className="text-[10px] font-bold text-slate-700 dark:text-white truncate">alice@weareedt.com</p>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 };
