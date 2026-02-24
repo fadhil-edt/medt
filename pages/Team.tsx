@@ -15,7 +15,7 @@ const Team: React.FC = () => {
     name: '', 
     email: '', 
     role: '', 
-    role_type: 'Production Dev Team', 
+    role_type: 'Staff', 
     password: '', 
     weekly_capacity: 5.0,
     gender: 'Other'
@@ -67,7 +67,7 @@ const Team: React.FC = () => {
     }
   };
 
-  const roleOptions: UserRole[] = ['Production Dev Team', 'Business Dev Team', 'Management', 'Admin'];
+  const roleOptions: UserRole[] = ['Staff', 'Management', 'Admin'];
 
   return (
     <div className="space-y-8 pb-10">
@@ -94,7 +94,7 @@ const Team: React.FC = () => {
             </button>
           </div>
           <button 
-            onClick={() => { setEditingMember(null); setFormData({ name: '', email: '', role: '', role_type: 'Production Dev Team', password: '', weekly_capacity: 5.0 }); setShowPassword(false); setIsModalOpen(true); }} 
+            onClick={() => { setEditingMember(null); setFormData({ name: '', email: '', role: '', role_type: 'Staff', password: '', weekly_capacity: 5.0 }); setShowPassword(false); setIsModalOpen(true); }} 
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-full text-sm font-black flex items-center shadow-lg transition-all active:scale-95"
           >
             <UserPlus className="w-4 h-4 mr-2" /> Add Team Member
@@ -110,7 +110,6 @@ const Team: React.FC = () => {
                  <div className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
                    member.role_type === 'Admin' ? 'bg-indigo-100 text-indigo-600' : 
                    member.role_type === 'Management' ? 'bg-emerald-100 text-emerald-600' : 
-                   member.role_type === 'Business Dev Team' ? 'bg-blue-100 text-blue-600' :
                    'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'
                  }`}>{member.role_type}</div>
                  <div className="flex items-center gap-1">

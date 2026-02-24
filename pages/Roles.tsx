@@ -38,7 +38,7 @@ const Roles: React.FC = () => {
     { id: 'viewFinancials', label: 'View Currency / Project Values' },
   ];
 
-  const roleList: UserRole[] = ['Production Dev Team', 'Business Dev Team', 'Management', 'Admin'];
+  const roleList: UserRole[] = ['Staff', 'Management', 'Admin'];
 
   return (
     <div className="space-y-8 pb-10">
@@ -78,7 +78,7 @@ const Roles: React.FC = () => {
                     <th className="px-10 py-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest min-w-[250px]">System Module</th>
                     {roleList.map(r => (
                       <th key={r} className="px-6 py-6 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest min-w-[120px]">
-                        {r === 'Production Dev Team' ? 'Prod Dev' : r === 'Business Dev Team' ? 'Biz Dev' : r}
+                        {r}
                       </th>
                     ))}
                   </tr>
@@ -89,24 +89,17 @@ const Roles: React.FC = () => {
                       <td className="px-10 py-6">
                         <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{mod.label}</span>
                       </td>
-                      <td className="px-6 py-6 text-center">
-                        <button onClick={() => handleToggle('Production Dev Team', mod.id)} className="transition-all transform active:scale-90 text-indigo-600">
-                          {permissions['Production Dev Team'][mod.id] ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6 text-gray-200 dark:text-slate-700" />}
-                        </button>
-                      </td>
-                      <td className="px-6 py-6 text-center">
-                        <button onClick={() => handleToggle('Business Dev Team', mod.id)} className="transition-all transform active:scale-90 text-blue-600">
-                          {permissions['Business Dev Team'][mod.id] ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6 text-gray-200 dark:text-slate-700" />}
-                        </button>
-                      </td>
-                      <td className="px-6 py-6 text-center">
-                        <button onClick={() => handleToggle('Management', mod.id)} className="transition-all transform active:scale-90 text-emerald-600">
-                          {permissions.Management[mod.id] ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6 text-gray-200 dark:text-slate-700" />}
-                        </button>
-                      </td>
-                      <td className="px-6 py-6 text-center">
-                         <div className="flex justify-center"><ShieldAlert className="w-6 h-6 text-indigo-200" /></div>
-                      </td>
+                      {roleList.map(r => (
+                        <td key={r} className="px-6 py-6 text-center">
+                          {r === 'Admin' ? (
+                            <div className="flex justify-center"><ShieldAlert className="w-6 h-6 text-indigo-200" /></div>
+                          ) : (
+                            <button onClick={() => handleToggle(r, mod.id)} className={`transition-all transform active:scale-90 ${r === 'Staff' ? 'text-indigo-600' : 'text-emerald-600'}`}>
+                              {permissions[r][mod.id] ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6 text-gray-200 dark:text-slate-700" />}
+                            </button>
+                          )}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
@@ -162,7 +155,6 @@ const Roles: React.FC = () => {
                             member.id === 'sa-01' ? 'bg-indigo-50/50 border-indigo-100/50 text-indigo-400 cursor-not-allowed opacity-70' : 
                             member.role_type === 'Admin' ? 'bg-indigo-50 border-indigo-100 text-indigo-600 cursor-pointer' : 
                             member.role_type === 'Management' ? 'bg-emerald-50 border-emerald-100 text-emerald-600 cursor-pointer' :
-                            member.role_type === 'Business Dev Team' ? 'bg-blue-50 border-blue-100 text-blue-600 cursor-pointer' :
                             'bg-gray-50 border-gray-100 text-gray-500 cursor-pointer'
                           }`}
                         >

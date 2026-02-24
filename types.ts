@@ -1,7 +1,7 @@
 
 export type ProjectStatus = 'Cold' | 'Warm' | 'Hot' | 'Pre Prod' | 'Development' | 'Closure' | 'Completed' | 'Lost';
 export type ProjectType = 'Internal' | 'Servicing';
-export type UserRole = 'Production Dev Team' | 'Business Dev Team' | 'Management' | 'Admin';
+export type UserRole = 'Staff' | 'Management' | 'Admin';
 export type TaskPriority = 'High' | 'Med' | 'Low';
 
 export interface AutomationSettings {

@@ -57,8 +57,7 @@ const SUPER_ADMIN_OBJ: Staff = {
 const DEFAULT_PERMISSIONS: Record<UserRole, RolePermissions> = {
   Admin: { dashboard: true, sales: true, ongoing: true, team: true, roles: true, archive: true, viewFinancials: true },
   Management: { dashboard: true, sales: true, ongoing: true, team: true, roles: false, archive: true, viewFinancials: true },
-  'Business Dev Team': { dashboard: true, sales: true, ongoing: false, team: false, roles: false, archive: true, viewFinancials: false },
-  'Production Dev Team': { dashboard: true, sales: false, ongoing: true, team: false, roles: false, archive: false, viewFinancials: false },
+  Staff: { dashboard: true, sales: false, ongoing: true, team: false, roles: false, archive: false, viewFinancials: false },
 };
 
 const DEFAULT_AUTOMATION: AutomationSettings = {
@@ -391,7 +390,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         name: cleanInput.split('@')[0], 
         email: cleanInput, 
         role: 'Workspace User', 
-        role_type: 'Production Dev Team', 
+        role_type: 'Staff', 
         active_tasks: 0, 
         weekly_capacity: 5.0 
       };
@@ -567,7 +566,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       projects, tasks, staff, notifications, unreadNotificationCount, markNotificationRead, markAllNotificationsRead,
       permissions, automationSettings, updateAutomationSettings, darkMode, setDarkMode, isSyncing, refreshData,
       currentUser, isAuthenticated, login, logout,
-      currentUserRole: currentUser?.role_type || 'Production Dev Team', 
+      currentUserRole: currentUser?.role_type || 'Staff', 
       currentUserName: currentUser?.name || 'Guest', 
       setCurrentUserRole: (r) => currentUser && setCurrentUser({...currentUser, role_type: r}),
       addProject, updateProject, updateProjectStatus, addTask, updateTask, toggleTaskStatus, addStaff, updateStaff, updatePermissions,
