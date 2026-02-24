@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProjects } from '../lib/ProjectContext';
-import { DollarSign, CheckCircle2, Circle, ArrowLeft, Plus, X, ChevronDown, Rocket, Clock, User, Edit3, Layers, GripVertical, Calendar, Lock, Globe, Building2, Phone, UserPlus, Tag, RefreshCw, AlignLeft } from 'lucide-react';
+import { DollarSign, CheckCircle2, Circle, ArrowLeft, Plus, X, ChevronDown, Rocket, Clock, User, Edit3, Layers, GripVertical, Calendar, Lock, Globe, Building2, Phone, UserPlus, Tag, RefreshCw, AlignLeft, BarChart2, LayoutGrid } from 'lucide-react';
 import { Task, ProjectStatus, Project, ProjectType, TaskPriority } from '../types';
 import { FigmaIcon, GDriveIcon } from '../components/BrandIcons';
 
@@ -235,14 +235,24 @@ const ProjectDetails: React.FC = () => {
 
       <div className="space-y-6">
         <div className="flex justify-between items-center px-2">
-          <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-             Project Workflow
-             <span className="text-[10px] bg-indigo-600 text-white px-3 py-1 rounded-full font-black uppercase tracking-widest">{projectTasks.length} Active</span>
-          </h3>
+          <div className="flex items-center gap-6">
+            <h3 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+               Project Workflow
+               <span className="text-[10px] bg-indigo-600 text-white px-3 py-1 rounded-full font-black uppercase tracking-widest">{projectTasks.length} Active</span>
+            </h3>
+            <Link 
+              to={`/projects/${id}/gantt`}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-inner text-gray-400 hover:text-indigo-600 transition-all"
+            >
+              <BarChart2 className="w-4 h-4 rotate-90" />
+              <span className="text-[9px] font-black uppercase tracking-widest">View Gantt Timeline</span>
+            </Link>
+          </div>
           <button onClick={() => { setEditingTask(null); setNewTaskData({ task_name: '', task_description: '', assigned_to: currentUserName, status: 'Pending', scope_size: 1.0, priority: 'Med', start_date: '', due_date: '' }); setIsTaskModalOpen(true); }} className="bg-indigo-600 text-white px-6 py-2.5 rounded-2xl font-black shadow-lg hover:shadow-indigo-200 transition-all active:scale-95 flex items-center">
             <Plus className="w-4 h-4 mr-2" /> New Task
           </button>
         </div>
+
         <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide">
           {(['Pending', 'In Progress', 'Done'] as Task['status'][]).map((status) => (
             <div 

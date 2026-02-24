@@ -14,6 +14,7 @@ import MyTasks from './pages/MyTasks';
 import Notifications from './pages/Notifications';
 import ClaimManagement from './pages/ClaimManagement';
 import ClaimDetails from './pages/ClaimDetails';
+import ProjectGantt from './pages/ProjectGantt';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
 import { ProjectProvider, useProjects } from './lib/ProjectContext';
@@ -89,6 +90,7 @@ const App: React.FC = () => {
             <Route path="/ongoing-projects" element={<ProtectedRoute><OngoingProjects /></ProtectedRoute>} />
             <Route path="/archive" element={<ProtectedRoute><ProjectArchive /></ProtectedRoute>} />
             <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetails /></ProtectedRoute>} />
+            <Route path="/projects/:id/gantt" element={<ProtectedRoute><ProjectGantt /></ProtectedRoute>} />
             <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
             <Route path="/team/:id/workload" element={<ProtectedRoute><UserWorkload /></ProtectedRoute>} />
             <Route path="/roles" element={<ProtectedRoute><Roles /></ProtectedRoute>} />

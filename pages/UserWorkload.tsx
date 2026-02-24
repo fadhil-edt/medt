@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProjects } from '../lib/ProjectContext';
 import { ArrowLeft, Briefcase, Calendar, CheckCircle2, ChevronDown, ChevronRight, Clock, Layers, LayoutGrid, Rocket, User as UserIcon, ListFilter, AlertCircle, AlignLeft } from 'lucide-react';
-import { Task, Project } from '../types';
+import { Task, Project, Staff } from '../types';
 
 const ProjectWorkloadBlock: React.FC<{ 
   project: Project; 

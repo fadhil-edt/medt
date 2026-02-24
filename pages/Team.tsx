@@ -8,7 +8,7 @@ import { useNavigate, Link } from 'react-router-dom';
 const Team: React.FC = () => {
   const { staff, tasks, projects, addStaff, updateStaff } = useProjects();
   const navigate = useNavigate();
-  const [view, setView] = useState<'card' | 'table' | 'workload'>('card');
+  const [view, setView] = useState<'card' | 'table' | 'workload'>('workload');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Staff | null>(null);
   const [formData, setFormData] = useState<Partial<Staff>>({ 

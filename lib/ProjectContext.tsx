@@ -380,22 +380,11 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
 
     if (user) {
-      if (password && user.password !== password) throw new Error('Invalid credentials.');
+      if (user.password && user.password !== password) throw new Error('Invalid credentials.');
       setCurrentUser(user); 
       setIsAuthenticated(true);
     } else {
-      const stableId = btoa(cleanInput).substring(0, 10);
-      const newUser: Staff = { 
-        id: stableId, 
-        name: cleanInput.split('@')[0], 
-        email: cleanInput, 
-        role: 'Workspace User', 
-        role_type: 'Staff', 
-        active_tasks: 0, 
-        weekly_capacity: 5.0 
-      };
-      setCurrentUser(newUser); 
-      setIsAuthenticated(true);
+      throw new Error('User not found. Please contact your administrator.');
     }
   };
 

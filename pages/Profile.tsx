@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useProjects } from '../lib/ProjectContext';
-import { Camera, User, Mail, Shield, Save, Check, ArrowLeft, Loader2, Upload } from 'lucide-react';
+import { Camera, User, Mail, Shield, Save, Check, ArrowLeft, Loader2, Upload, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Profile: React.FC = () => {
@@ -11,8 +11,14 @@ const Profile: React.FC = () => {
   
   const [name, setName] = useState(currentUser?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatar_url || '');
+  const [password, setPassword] = useState(currentUser?.password || '');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  const randomizeAvatar = () => {
+    const seed = Math.random().toString(36).substring(7);
+    setAvatarUrl(`https://api.dicebear.com/7.x/notionists/svg?seed=${seed}`);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -34,7 +40,8 @@ const Profile: React.FC = () => {
     await updateStaff({
       ...currentUser,
       name,
-      avatar_url: avatarUrl
+      avatar_url: avatarUrl,
+      password
     });
 
     setIsSuccess(true);
@@ -91,6 +98,14 @@ const Profile: React.FC = () => {
 
             <div className="mt-10 w-full pt-8 border-t border-gray-50 dark:border-slate-800 flex flex-col gap-4">
                <button 
+                 type="button"
+                 onClick={randomizeAvatar}
+                 className="w-full py-4 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-2xl text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 transition-all flex items-center justify-center gap-2"
+               >
+                 <RefreshCw className="w-3.5 h-3.5" /> Randomize Avatar
+               </button>
+               <button 
+                 type="button"
                  onClick={() => fileInputRef.current?.click()}
                  className="w-full py-4 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 transition-all flex items-center justify-center gap-2"
                >
@@ -143,6 +158,19 @@ const Profile: React.FC = () => {
                     {currentUser?.role}
                   </div>
                 </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Account Password</label>
+                  <input 
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Set new password"
+                    className="w-full px-6 py-4 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none text-slate-800 dark:text-white font-bold transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Access Level</label>
                   <div className="px-6 py-4 rounded-2xl bg-gray-100 dark:bg-slate-800/50 text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest text-xs flex items-center gap-2 border border-indigo-100 dark:border-indigo-900/30">

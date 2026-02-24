@@ -24,11 +24,9 @@ const Login: React.FC = () => {
   const { login } = useProjects();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<'sso' | 'manual'>('sso');
   const [error, setError] = useState<string | null>(null);
   
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
+  const [emailOrUser, setEmailOrUser] = useState('');
   const [password, setPassword] = useState('');
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -37,13 +35,8 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      if (mode === 'sso') {
-        if (!email) throw new Error('Workspace email is required.');
-        await login(email);
-      } else {
-        if (!username || !password) throw new Error('All fields are required.');
-        await login(username, password);
-      }
+      if (!emailOrUser || !password) throw new Error('All fields are required.');
+      await login(emailOrUser, password);
       navigate('/my-tasks');
     } catch (err: any) {
       setError(err.message || 'Identity verification failed.');
@@ -69,112 +62,57 @@ const Login: React.FC = () => {
             <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.3em] mt-3">My Essential Deadline Tracker</p>
           </div>
 
-          <div className="flex mb-10 p-1.5 bg-gray-100 dark:bg-slate-800 rounded-2xl">
-            <button 
-              onClick={() => { setMode('sso'); setError(null); }}
-              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'sso' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-gray-400'}`}
-            >
-              Workspace SSO
-            </button>
-            <button 
-              onClick={() => { setMode('manual'); setError(null); }}
-              className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'manual' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-gray-400'}`}
-            >
-              Admin Access
-            </button>
-          </div>
-
           <form onSubmit={handleAuth} className="space-y-6">
-            {mode === 'sso' ? (
-              <div className="space-y-4 animate-in fade-in duration-500">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Work Email</label>
-                  <div className="relative group">
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 transition-colors group-focus-within:text-blue-500">
-                      <Mail className="w-full h-full" />
-                    </div>
-                    <input 
-                      type="email" 
-                      placeholder="name@weareedt.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={isLoading}
-                      className="w-full pl-14 pr-6 py-5 rounded-3xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none transition-all font-bold text-slate-800 dark:text-white shadow-inner"
-                    />
+            <div className="space-y-4 animate-in fade-in duration-500">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Work Email / Username</label>
+                <div className="relative group">
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 transition-colors group-focus-within:text-blue-500">
+                    <Mail className="w-full h-full" />
                   </div>
+                  <input 
+                    type="text" 
+                    placeholder="name@weareedt.com"
+                    value={emailOrUser}
+                    onChange={(e) => setEmailOrUser(e.target.value)}
+                    disabled={isLoading}
+                    className="w-full pl-14 pr-6 py-5 rounded-3xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none transition-all font-bold text-slate-800 dark:text-white shadow-inner"
+                  />
                 </div>
-                
-                <button 
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full group relative overflow-hidden py-5 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-slate-800 dark:text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-4 transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" viewBox="0 0 48 48">
-                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                      </svg>
-                      Google SSO Login
-                    </>
-                  )}
-                </button>
               </div>
-            ) : (
-              <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Username</label>
-                  <div className="relative group">
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 transition-colors group-focus-within:text-blue-500">
-                      <UserCircle className="w-full h-full" />
-                    </div>
-                    <input 
-                      type="text" 
-                      placeholder="Username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      disabled={isLoading}
-                      className="w-full pl-14 pr-6 py-5 rounded-3xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none transition-all font-bold text-slate-800 dark:text-white shadow-inner"
-                    />
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
+                <div className="relative group">
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 transition-colors group-focus-within:text-blue-500">
+                    <Lock className="w-full h-full" />
                   </div>
+                  <input 
+                    type="password" 
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    className="w-full pl-14 pr-6 py-5 rounded-3xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none transition-all font-bold text-slate-800 dark:text-white shadow-inner"
+                  />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
-                  <div className="relative group">
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 transition-colors group-focus-within:text-blue-500">
-                      <Lock className="w-full h-full" />
-                    </div>
-                    <input 
-                      type="password" 
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={isLoading}
-                      className="w-full pl-14 pr-6 py-5 rounded-3xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none transition-all font-bold text-slate-800 dark:text-white shadow-inner"
-                    />
-                  </div>
-                </div>
-                
-                <button 
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-5 bg-blue-600 text-white rounded-3xl font-black text-xs uppercase tracking-[0.25em] shadow-xl flex items-center justify-center gap-4 transition-all hover:bg-blue-700 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      Verify Identity
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
               </div>
-            )}
+              
+              <button 
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-5 bg-blue-600 text-white rounded-3xl font-black text-xs uppercase tracking-[0.25em] shadow-xl flex items-center justify-center gap-4 transition-all hover:bg-blue-700 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    Verify Identity
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
 
             {error && (
               <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-500 p-5 rounded-[2rem] text-[10px] font-black uppercase tracking-widest flex items-center gap-4 animate-in slide-in-from-top-2">
