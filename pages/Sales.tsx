@@ -96,6 +96,15 @@ const ProjectCard: React.FC<{
         </Link>
       </div>
 
+      <div className="flex gap-1.5 mb-3">
+         <a href={project.figma_link || '#'} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[8px] font-black uppercase hover:bg-gray-100 transition-all shadow-sm border border-gray-100 dark:border-slate-800">
+            <FigmaIcon className="w-2.5 h-2.5" /> Figma
+         </a>
+         <a href={project.gdrive_link || '#'} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[8px] font-black uppercase hover:bg-gray-100 transition-all shadow-sm border border-gray-100 dark:border-slate-800">
+            <GDriveIcon className="w-2.5 h-2.5" /> Drive
+         </a>
+      </div>
+
       <div className="bg-gray-50 dark:bg-slate-800/30 rounded-xl p-2 mb-3 border border-gray-100 dark:border-slate-800/50 flex items-center justify-between">
          <div className="flex items-center gap-2 truncate">
             <User className="w-2.5 h-2.5 text-indigo-400" />
@@ -365,6 +374,26 @@ const Sales: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Funnel Status</label><select className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold appearance-none cursor-pointer" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as ProjectStatus})}><option value="Cold">Cold</option><option value="Warm">Warm</option><option value="Hot">Hot</option></select></div>
                 {canSeeFinancials && <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Est. Revenue</label><input type="number" className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold" value={formData.budget || ''} onChange={e => setFormData({...formData, budget: Number(e.target.value)})} /></div>}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase">Figma Link</label>
+                  <input className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none text-slate-800 dark:text-white font-bold" placeholder="https://figma.com/..." value={formData.figma_link || ''} onChange={e => setFormData({...formData, figma_link: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase">Google Drive Link</label>
+                  <input className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none text-slate-800 dark:text-white font-bold" placeholder="https://drive.google.com/..." value={formData.gdrive_link || ''} onChange={e => setFormData({...formData, gdrive_link: e.target.value})} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase">Kickoff Date</label>
+                  <input type="date" className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none text-slate-800 dark:text-white font-bold" value={formData.kickoff_date || ''} onChange={e => setFormData({...formData, kickoff_date: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase">Delivery Date</label>
+                  <input type="date" className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none text-slate-800 dark:text-white font-bold" value={formData.delivery_date || ''} onChange={e => setFormData({...formData, delivery_date: e.target.value})} />
+                </div>
               </div>
               <div className="pt-8 flex justify-end gap-4">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-xs font-black uppercase text-gray-400">Cancel</button>
