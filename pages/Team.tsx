@@ -2,13 +2,13 @@
 import React, { useState, useMemo } from 'react';
 import { useProjects } from '../lib/ProjectContext';
 import { Staff, UserRole } from '../types';
-import { User, X, Edit3, UserPlus, Mail, Key, Eye, EyeOff, LayoutGrid, Table as TableIcon, Check, ChevronDown, ShieldAlert, Kanban, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { User, X, Edit3, UserPlus, Mail, Key, Eye, EyeOff, LayoutGrid, Table as TableIcon, Check, ChevronDown, ShieldAlert, Kanban, ArrowRight, Briefcase, Clock, CheckCircle2 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Team: React.FC = () => {
-  const { staff, tasks, addStaff, updateStaff } = useProjects();
+  const { staff, tasks, projects, addStaff, updateStaff } = useProjects();
   const navigate = useNavigate();
-  const [view, setView] = useState<'card' | 'table'>('card');
+  const [view, setView] = useState<'card' | 'table' | 'workload'>('card');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Staff | null>(null);
   const [formData, setFormData] = useState<Partial<Staff>>({ 
@@ -47,6 +47,39 @@ const Team: React.FC = () => {
     ...member, 
     current_load: tasks.filter(t => t.assigned_to === member.name && t.status !== 'Done').reduce((sum, t) => sum + (Number(t.scope_size) || 0), 0) 
   })), [staff, tasks]);
+
+  const projectWorkloads = useMemo(() => {
+    const activeProjects = projects.filter(p => !['Completed', 'Lost'].includes(p.status));
+    
+    const mapped = activeProjects.map(project => {
+      const projectTasks = tasks.filter(t => String(t.project_id) === String(project.id));
+      const uniqueAssignees = Array.from(new Set(projectTasks.map(t => t.assigned_to?.trim().toLowerCase()).filter(Boolean)));
+      
+      const involvedMembers = uniqueAssignees.map(assigneeName => {
+        const staffMember = staff.find(s => s.name.trim().toLowerCase() === assigneeName);
+        const remainingTasks = projectTasks.filter(t => t.assigned_to?.trim().toLowerCase() === assigneeName && t.status !== 'Done').length;
+        
+        return {
+          staffMember,
+          name: assigneeName,
+          remainingTasks
+        };
+      }).filter(item => item.staffMember !== undefined);
+
+      return {
+        project,
+        involvedMembers,
+        totalRemainingTasks: involvedMembers.reduce((sum, m) => sum + m.remainingTasks, 0)
+      };
+    }).filter(pw => pw.involvedMembers.length > 0);
+
+    const hot = mapped.filter(pw => pw.project.status === 'Hot').sort((a, b) => b.totalRemainingTasks - a.totalRemainingTasks);
+    const warm = mapped.filter(pw => pw.project.status === 'Warm').sort((a, b) => b.totalRemainingTasks - a.totalRemainingTasks);
+    const cold = mapped.filter(pw => pw.project.status === 'Cold').sort((a, b) => b.totalRemainingTasks - a.totalRemainingTasks);
+    const ongoing = mapped.filter(pw => ['Pre Prod', 'Development', 'Closure'].includes(pw.project.status)).sort((a, b) => b.totalRemainingTasks - a.totalRemainingTasks);
+
+    return { hot, warm, cold, ongoing };
+  }, [projects, tasks, staff]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +124,13 @@ const Team: React.FC = () => {
               title="Table View"
             >
               <TableIcon className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setView('workload')} 
+              className={`p-2 rounded-xl transition-all ${view === 'workload' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-indigo-600'}`}
+              title="Team Current Workload"
+            >
+              <Briefcase className="w-5 h-5" />
             </button>
           </div>
           <button 
@@ -146,7 +186,7 @@ const Team: React.FC = () => {
             </div>
           ))}
         </div>
-      ) : (
+      ) : view === 'table' ? (
         <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -229,6 +269,308 @@ const Team: React.FC = () => {
           <div className="p-4 bg-gray-50 dark:bg-slate-800/30 border-t border-gray-100 dark:border-slate-800">
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Changes are saved automatically to the cloud context</p>
           </div>
+        </div>
+      ) : (
+        <div className="space-y-12 animate-in fade-in duration-500">
+          {/* Ongoing Projects Section */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-4 px-2">
+              <div className="h-8 w-1.5 bg-indigo-600 rounded-full" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Ongoing Projects</h2>
+              <span className="text-[10px] font-black bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100 dark:border-indigo-900/50">
+                {projectWorkloads.ongoing.length} Active
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {projectWorkloads.ongoing.map(({ project, involvedMembers, totalRemainingTasks }) => (
+                <div key={project.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all overflow-hidden flex flex-col">
+                  <div className="p-7 border-b border-gray-50 dark:border-slate-800/50">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center font-black text-lg text-indigo-600 shadow-inner">
+                          {project.client_name.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="text-base font-black text-slate-800 dark:text-white leading-tight truncate max-w-[180px]">{project.project_name}</h3>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{project.client_name}</p>
+                        </div>
+                      </div>
+                      <Link to={`/projects/${project.id}`} className="p-2.5 bg-gray-50 dark:bg-slate-800 text-gray-400 hover:text-indigo-600 rounded-xl transition-all border border-gray-100 dark:border-slate-700">
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-black bg-rose-50 dark:bg-rose-900/20 text-rose-600 px-3 py-1 rounded-full uppercase tracking-widest border border-rose-100 dark:border-rose-900/50">
+                        {totalRemainingTasks} Remaining Tasks
+                      </span>
+                      <span className="text-[8px] font-black bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 px-3 py-1 rounded-full uppercase tracking-widest border border-indigo-100 dark:border-indigo-900/50">
+                        {project.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-7 space-y-4 flex-1">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Involved Personnel</p>
+                    <div className="space-y-3">
+                      {involvedMembers.map((item, idx) => (
+                        <Link 
+                          key={idx} 
+                          to={`/team/${item.staffMember?.id}/workload`}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700">
+                              <img src={item.staffMember?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`} className="w-full h-full object-cover" alt={item.name} />
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-none">{item.staffMember?.name}</p>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{item.staffMember?.role}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-xs font-black ${item.remainingTasks > 0 ? 'text-indigo-600' : 'text-emerald-500'}`}>
+                              {item.remainingTasks}
+                            </p>
+                            <p className="text-[7px] font-black text-gray-400 uppercase tracking-tighter">Remaining</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {projectWorkloads.ongoing.length === 0 && (
+                <div className="col-span-full py-20 text-center bg-gray-50/50 dark:bg-slate-900/30 rounded-[4rem] border-2 border-dashed border-gray-200 dark:border-slate-800">
+                  <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-xs">No Active Ongoing Projects</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Hot Leads Section */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-4 px-2">
+              <div className="h-8 w-1.5 bg-rose-500 rounded-full" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Hot Leads</h2>
+              <span className="text-[10px] font-black bg-rose-50 dark:bg-rose-900/20 text-rose-600 px-3 py-1 rounded-full border border-rose-100 dark:border-rose-900/50">
+                {projectWorkloads.hot.length} Active
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {projectWorkloads.hot.map(({ project, involvedMembers, totalRemainingTasks }) => (
+                <div key={project.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all overflow-hidden flex flex-col">
+                  <div className="p-7 border-b border-gray-50 dark:border-slate-800/50">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center font-black text-lg text-rose-600 shadow-inner">
+                          {project.client_name.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="text-base font-black text-slate-800 dark:text-white leading-tight truncate max-w-[180px]">{project.project_name}</h3>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{project.client_name}</p>
+                        </div>
+                      </div>
+                      <Link to={`/projects/${project.id}`} className="p-2.5 bg-gray-50 dark:bg-slate-800 text-gray-400 hover:text-indigo-600 rounded-xl transition-all border border-gray-100 dark:border-slate-700">
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-black bg-rose-50 dark:bg-rose-900/20 text-rose-600 px-3 py-1 rounded-full uppercase tracking-widest border border-rose-100 dark:border-rose-900/50">
+                        {totalRemainingTasks} Remaining Tasks
+                      </span>
+                      <span className="text-[8px] font-black bg-rose-50 dark:bg-rose-900/20 text-rose-600 px-3 py-1 rounded-full uppercase tracking-widest border border-rose-100 dark:border-rose-900/50">
+                        {project.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-7 space-y-4 flex-1">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Involved Personnel</p>
+                    <div className="space-y-3">
+                      {involvedMembers.map((item, idx) => (
+                        <Link 
+                          key={idx} 
+                          to={`/team/${item.staffMember?.id}/workload`}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700">
+                              <img src={item.staffMember?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`} className="w-full h-full object-cover" alt={item.name} />
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-none">{item.staffMember?.name}</p>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{item.staffMember?.role}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-xs font-black ${item.remainingTasks > 0 ? 'text-indigo-600' : 'text-emerald-500'}`}>
+                              {item.remainingTasks}
+                            </p>
+                            <p className="text-[7px] font-black text-gray-400 uppercase tracking-tighter">Remaining</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {projectWorkloads.hot.length === 0 && (
+                <div className="col-span-full py-20 text-center bg-gray-50/50 dark:bg-slate-900/30 rounded-[4rem] border-2 border-dashed border-gray-200 dark:border-slate-800">
+                  <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-xs">No Active Hot Leads</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Warm Leads Section */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-4 px-2">
+              <div className="h-8 w-1.5 bg-amber-500 rounded-full" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Warm Leads</h2>
+              <span className="text-[10px] font-black bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-3 py-1 rounded-full border border-amber-100 dark:border-amber-900/50">
+                {projectWorkloads.warm.length} Active
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {projectWorkloads.warm.map(({ project, involvedMembers, totalRemainingTasks }) => (
+                <div key={project.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all overflow-hidden flex flex-col">
+                  <div className="p-7 border-b border-gray-50 dark:border-slate-800/50">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center font-black text-lg text-amber-600 shadow-inner">
+                          {project.client_name.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="text-base font-black text-slate-800 dark:text-white leading-tight truncate max-w-[180px]">{project.project_name}</h3>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{project.client_name}</p>
+                        </div>
+                      </div>
+                      <Link to={`/projects/${project.id}`} className="p-2.5 bg-gray-50 dark:bg-slate-800 text-gray-400 hover:text-indigo-600 rounded-xl transition-all border border-gray-100 dark:border-slate-700">
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-black bg-rose-50 dark:bg-rose-900/20 text-rose-600 px-3 py-1 rounded-full uppercase tracking-widest border border-rose-100 dark:border-rose-900/50">
+                        {totalRemainingTasks} Remaining Tasks
+                      </span>
+                      <span className="text-[8px] font-black bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-3 py-1 rounded-full uppercase tracking-widest border border-amber-100 dark:border-amber-900/50">
+                        {project.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-7 space-y-4 flex-1">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Involved Personnel</p>
+                    <div className="space-y-3">
+                      {involvedMembers.map((item, idx) => (
+                        <Link 
+                          key={idx} 
+                          to={`/team/${item.staffMember?.id}/workload`}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700">
+                              <img src={item.staffMember?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`} className="w-full h-full object-cover" alt={item.name} />
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-none">{item.staffMember?.name}</p>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{item.staffMember?.role}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-xs font-black ${item.remainingTasks > 0 ? 'text-indigo-600' : 'text-emerald-500'}`}>
+                              {item.remainingTasks}
+                            </p>
+                            <p className="text-[7px] font-black text-gray-400 uppercase tracking-tighter">Remaining</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {projectWorkloads.warm.length === 0 && (
+                <div className="col-span-full py-20 text-center bg-gray-50/50 dark:bg-slate-900/30 rounded-[4rem] border-2 border-dashed border-gray-200 dark:border-slate-800">
+                  <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-xs">No Active Warm Leads</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Cold Leads Section */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-4 px-2">
+              <div className="h-8 w-1.5 bg-slate-400 rounded-full" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">Cold Leads</h2>
+              <span className="text-[10px] font-black bg-slate-50 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">
+                {projectWorkloads.cold.length} Leads
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {projectWorkloads.cold.map(({ project, involvedMembers, totalRemainingTasks }) => (
+                <div key={project.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all overflow-hidden flex flex-col opacity-75 grayscale-[0.5]">
+                  <div className="p-7 border-b border-gray-50 dark:border-slate-800/50">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center font-black text-lg text-slate-400 shadow-inner">
+                          {project.client_name.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="text-base font-black text-slate-800 dark:text-white leading-tight truncate max-w-[180px]">{project.project_name}</h3>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{project.client_name}</p>
+                        </div>
+                      </div>
+                      <Link to={`/projects/${project.id}`} className="p-2.5 bg-gray-50 dark:bg-slate-800 text-gray-400 hover:text-indigo-600 rounded-xl transition-all border border-gray-100 dark:border-slate-700">
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-black bg-slate-50 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest border border-slate-100 dark:border-slate-700">
+                        {totalRemainingTasks} Remaining Tasks
+                      </span>
+                      <span className="text-[8px] font-black bg-slate-50 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest border border-slate-100 dark:border-slate-700">
+                        {project.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-7 space-y-4 flex-1">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Involved Personnel</p>
+                    <div className="space-y-3">
+                      {involvedMembers.map((item, idx) => (
+                        <Link 
+                          key={idx} 
+                          to={`/team/${item.staffMember?.id}/workload`}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl overflow-hidden bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700">
+                              <img src={item.staffMember?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`} className="w-full h-full object-cover" alt={item.name} />
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-black text-slate-800 dark:text-slate-200 leading-none">{item.staffMember?.name}</p>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{item.staffMember?.role}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-xs font-black ${item.remainingTasks > 0 ? 'text-indigo-600' : 'text-emerald-500'}`}>
+                              {item.remainingTasks}
+                            </p>
+                            <p className="text-[7px] font-black text-gray-400 uppercase tracking-tighter">Remaining</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {projectWorkloads.cold.length === 0 && (
+                <div className="col-span-full py-20 text-center bg-gray-50/50 dark:bg-slate-900/30 rounded-[4rem] border-2 border-dashed border-gray-200 dark:border-slate-800">
+                  <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-xs">No Active Cold Leads</p>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
       )}
 

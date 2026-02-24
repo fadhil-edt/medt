@@ -8,11 +8,28 @@ import { Task, Project } from '../types';
 const ProjectWorkloadBlock: React.FC<{ 
   project: Project; 
   userTasks: Task[];
-}> = ({ project, userTasks }) => {
+  allTasks: Task[];
+  allStaff: Staff[];
+}> = ({ project, userTasks, allTasks, allStaff }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const pendingTasks = userTasks.filter(t => t.status !== 'Done');
   const completedTasks = userTasks.filter(t => t.status === 'Done');
   const totalScope = userTasks.reduce((sum, t) => sum + (Number(t.scope_size) || 0), 0);
+
+  const involvedTeam = useMemo(() => {
+    const projectTasks = allTasks.filter(t => String(t.project_id) === String(project.id));
+    const uniqueAssignees = Array.from(new Set(projectTasks.map(t => t.assigned_to?.trim().toLowerCase()).filter(Boolean)));
+    
+    return uniqueAssignees.map(assigneeName => {
+      const staffMember = allStaff.find(s => s.name.trim().toLowerCase() === assigneeName);
+      const activeWorkload = allTasks.filter(t => t.assigned_to?.trim().toLowerCase() === assigneeName && t.status !== 'Done').length;
+      return {
+        staffMember,
+        activeWorkload,
+        name: assigneeName
+      };
+    }).filter(item => item.staffMember !== undefined);
+  }, [project.id, allTasks, allStaff]);
 
   const statusColors: Record<string, string> = {
     'Hot': 'text-rose-500 bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-900/50',
@@ -62,6 +79,35 @@ const ProjectWorkloadBlock: React.FC<{
                 <span className="text-[9px] font-bold text-emerald-300 uppercase">Tasks</span>
               </div>
            </div>
+        </div>
+
+        <div className="mb-6">
+          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-3">Involved Team</p>
+          <div className="flex flex-wrap gap-2">
+            {involvedTeam.map((item, idx) => (
+              <Link 
+                key={idx} 
+                to={`/team/${item.staffMember?.id}/workload`}
+                className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 px-2 py-1.5 rounded-xl border border-gray-100 dark:border-slate-800 group/staff relative hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-200 transition-all"
+              >
+                <div className="w-6 h-6 rounded-lg overflow-hidden bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700">
+                  <img src={item.staffMember?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${item.name}`} className="w-full h-full object-cover" alt={item.name} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-700 dark:text-slate-300 truncate max-w-[60px]">{item.staffMember?.name}</span>
+                  <span className={`text-[7px] font-bold ${item.activeWorkload > 5 ? 'text-rose-500' : 'text-indigo-500'}`}>
+                    {item.activeWorkload} Active Tasks
+                  </span>
+                </div>
+                
+                {/* Tooltip on hover */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-[9px] font-bold rounded-lg opacity-0 group-hover/staff:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-xl">
+                  {item.staffMember?.name} • {item.activeWorkload} Total Tasks
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
 
         <button 
@@ -128,14 +174,14 @@ const ExternalLinkIcon = ({ className }: { className: string }) => (
 const UserWorkload: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { staff, tasks, projects } = useProjects();
+  const { staff, tasks: tasksData, projects } = useProjects();
 
   const member = staff.find(s => String(s.id) === String(id));
   
   const userTasksByProject = useMemo(() => {
     if (!member) return [];
     
-    const memberTasks = tasks.filter(t => t.assigned_to?.trim().toLowerCase() === member.name?.trim().toLowerCase());
+    const memberTasks = tasksData.filter(t => t.assigned_to?.trim().toLowerCase() === member.name?.trim().toLowerCase());
     
     const groups: Record<string, Task[]> = {};
     memberTasks.forEach(t => {
@@ -148,7 +194,7 @@ const UserWorkload: React.FC = () => {
       return { project, tasks };
     }).filter(g => g.project !== undefined).sort((a, b) => b.tasks.length - a.tasks.length);
 
-  }, [member, tasks, projects]);
+  }, [member, tasksData, projects]);
 
   if (!member) {
     return (
@@ -230,7 +276,13 @@ const UserWorkload: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {userTasksByProject.map(({ project, tasks }) => (
-            <ProjectWorkloadBlock key={project!.id} project={project!} userTasks={tasks} />
+            <ProjectWorkloadBlock 
+              key={project!.id} 
+              project={project!} 
+              userTasks={tasks} 
+              allTasks={tasksData}
+              allStaff={staff}
+            />
           ))}
           {userTasksByProject.length === 0 && (
             <div className="col-span-full py-40 text-center bg-gray-50/50 dark:bg-slate-900/30 rounded-[4rem] border-2 border-dashed border-gray-200 dark:border-slate-800">
