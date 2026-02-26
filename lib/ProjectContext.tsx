@@ -82,8 +82,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [darkMode, setDarkMode] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   
-  const [currentUser, setCurrentUser] = useState<Staff | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<Staff | null>(() => {
+    const saved = localStorage.getItem('edt_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('edt_user') !== null;
+  });
   
   const [seenTaskIds, setSeenTaskIds] = useState<Set<string>>(new Set());
   
@@ -389,6 +394,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       if (user.password && user.password !== password) throw new Error('Invalid credentials.');
       setCurrentUser(user); 
       setIsAuthenticated(true);
+      localStorage.setItem('edt_user', JSON.stringify(user));
     } else {
       throw new Error('User not found. Please contact your administrator.');
     }
@@ -397,6 +403,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const logout = () => { 
     setCurrentUser(null); 
     setIsAuthenticated(false); 
+    localStorage.removeItem('edt_user');
     isInitialLoad.current = true;
     setTasks([]);
     setProjects([]);
@@ -510,6 +517,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     setStaff(prev => prev.map(s => String(s.id) === String(updatedStaff.id) ? updatedStaff : s));
     if (currentUser && String(updatedStaff.id) === String(currentUser.id)) {
       setCurrentUser(updatedStaff);
+      localStorage.setItem('edt_user', JSON.stringify(updatedStaff));
     }
     await cloudService.syncToCloud('staff', 'update', updatedStaff);
   };
