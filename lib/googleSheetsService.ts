@@ -219,6 +219,7 @@ class GoogleSheetsService {
       const cleanedStaff = (data.staff || []).map((s: any) => ({
         ...s,
         id: String(s.id),
+        password: s.password || s.Password || '',
         weekly_capacity: Number(s.weekly_capacity) || 0
       }));
 
@@ -240,12 +241,19 @@ class GoogleSheetsService {
 
   async syncToCloud(type: 'project' | 'task' | 'staff' | 'claim' | 'settings', action: 'add' | 'update' | 'delete', data: any) {
     if (!SCRIPT_URL) return;
+    
+    // Add casing variations for common fields to be more resilient to sheet headers
+    const syncData = { ...data };
+    if (type === 'staff' && syncData.password) {
+      syncData.Password = syncData.password;
+    }
+
     try {
       await fetch(SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors', 
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ type, action, data })
+        body: JSON.stringify({ type, action, data: syncData })
       });
     } catch (error) {
       console.error(`Sync Fail [${type}]:`, error);
