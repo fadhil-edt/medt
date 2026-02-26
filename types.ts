@@ -58,6 +58,7 @@ export interface Project {
   event_start_date?: string;
   event_end_date?: string;
   tags?: string;
+  lead_by?: string;
   claims?: ClaimMilestone[];
   last_automated_check?: string; // Track when the last stagnation check ran
 }

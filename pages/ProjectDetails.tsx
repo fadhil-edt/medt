@@ -65,7 +65,9 @@ const TaskCard: React.FC<{ task: Task; onEdit: (t: Task) => void }> = ({ task, o
     >
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2">{task.task_name}</h4>
+          <Link to={`/tasks/${task.id}`} className="group/title">
+            <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 group-hover/title:text-indigo-600 transition-colors">{task.task_name}</h4>
+          </Link>
           {task.task_description && (
             <p className="text-[10px] text-gray-400 mt-1 line-clamp-2 leading-relaxed italic">{task.task_description}</p>
           )}

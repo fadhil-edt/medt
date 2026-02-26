@@ -2,10 +2,11 @@
 import React, { useState, useMemo } from 'react';
 import { useProjects } from '../lib/ProjectContext';
 import { Project, ProjectStatus, ProjectType, Task } from '../types';
-import { Rocket, Edit3, GripVertical, Plus, X, ChevronRight, Lock, Phone, User, Tag, ChevronDown, CheckSquare, ExternalLink, Settings, AlertCircle, Clock, Zap, HelpCircle } from 'lucide-react';
+import { Rocket, Edit3, GripVertical, Plus, X, ChevronRight, Lock, Phone, User, Tag, ChevronDown, CheckSquare, ExternalLink, Settings, AlertCircle, Clock, Zap, HelpCircle, LayoutGrid, BarChart2, DollarSign, TrendingUp, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { FigmaIcon, GDriveIcon } from '../components/BrandIcons';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 const ProjectCard: React.FC<{ 
   project: Project; 
@@ -111,8 +112,8 @@ const ProjectCard: React.FC<{
             <span className="text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest truncate">{project.contact_person || 'N/A'}</span>
          </div>
          <div className="flex items-center gap-2">
-            <Phone className="w-2.5 h-2.5 text-emerald-400" />
-            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">{project.contact_phone ? 'Set' : 'No #'}</span>
+            <Users className="w-2.5 h-2.5 text-blue-400" />
+            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">{project.lead_by || 'Unknown'}</span>
          </div>
       </div>
 
@@ -148,16 +149,22 @@ const ProjectCard: React.FC<{
 };
 
 const Sales: React.FC = () => {
-  const { projects, tasks, updateProjectStatus, addProject, updateProject, permissions, currentUserRole, automationSettings, updateAutomationSettings } = useProjects();
+  const { projects, tasks, staff, updateProjectStatus, addProject, updateProject, permissions, currentUserRole, automationSettings, updateAutomationSettings } = useProjects();
   const salesProjects = projects.filter(p => ['Cold', 'Warm', 'Hot'].includes(p.status));
   const canSeeFinancials = permissions[currentUserRole].viewFinancials;
   
+  const [view, setView] = useState<'board' | 'dashboard'>('board');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [confirmData, setConfirmData] = useState<{ id: string, type: 'greenlight' | 'lost' } | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
   const [dragCounter, setDragCounter] = useState<Record<string, number>>({});
+  
+  const [filterStartMonth, setFilterStartMonth] = useState(new Date().getMonth() + 1);
+  const [filterStartYear, setFilterStartYear] = useState(new Date().getFullYear());
+  const [filterEndMonth, setFilterEndMonth] = useState(new Date().getMonth() + 1);
+  const [filterEndYear, setFilterEndYear] = useState(new Date().getFullYear());
   
   const [formData, setFormData] = useState<Partial<Project>>({
     status: 'Cold', budget: 0, progress: 0,
@@ -169,8 +176,74 @@ const Sales: React.FC = () => {
     gdrive_link: '',
     contact_person: '',
     contact_phone: '',
-    tags: ''
+    tags: '',
+    lead_by: ''
   });
+
+  const dashboardStats = useMemo(() => {
+    const totalLeadValue = salesProjects.reduce((sum, p) => sum + (Number(p.budget) || 0), 0);
+    
+    const valuePerPerson: Record<string, { value: number, projects: Project[] }> = {};
+    salesProjects.forEach(p => {
+      const leadBy = p.lead_by || 'Unassigned';
+      if (!valuePerPerson[leadBy]) valuePerPerson[leadBy] = { value: 0, projects: [] };
+      valuePerPerson[leadBy].value += (Number(p.budget) || 0);
+      valuePerPerson[leadBy].projects.push(p);
+    });
+
+    const chartData = Object.entries(valuePerPerson)
+      .map(([name, data]) => ({ name, value: data.value, projects: data.projects }))
+      .filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    // Greenlighted Projects Data (Filtered Range)
+    const startDate = new Date(filterStartYear, filterStartMonth - 1, 1);
+    const endDate = new Date(filterEndYear, filterEndMonth, 0); // Last day of endMonth
+
+    const greenlightedProjects = projects.filter(p => 
+      !['Cold', 'Warm', 'Hot', 'Lost'].includes(p.status) &&
+      p.kickoff_date && 
+      new Date(p.kickoff_date) >= startDate && 
+      new Date(p.kickoff_date) <= endDate
+    );
+
+    const greenlightedValue = greenlightedProjects.reduce((sum, p) => sum + (Number(p.budget) || 0), 0);
+    
+    const greenlightedPerPerson: Record<string, number> = {};
+    greenlightedProjects.forEach(p => {
+      const leadBy = p.lead_by || 'Unassigned';
+      greenlightedPerPerson[leadBy] = (greenlightedPerPerson[leadBy] || 0) + (Number(p.budget) || 0);
+    });
+
+    const greenlightedChartData = Object.entries(greenlightedPerPerson)
+      .map(([name, value]) => ({ name, value }))
+      .filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    return { 
+      totalLeadValue, 
+      chartData, 
+      greenlightedValue, 
+      greenlightedChartData, 
+      greenlightedCount: greenlightedProjects.length 
+    };
+  }, [salesProjects, projects, filterStartMonth, filterStartYear, filterEndMonth, filterEndYear]);
+
+  const months = [
+    { val: 1, label: 'Jan' }, { val: 2, label: 'Feb' }, { val: 3, label: 'Mar' },
+    { val: 4, label: 'Apr' }, { val: 5, label: 'May' }, { val: 6, label: 'Jun' },
+    { val: 7, label: 'Jul' }, { val: 8, label: 'Aug' }, { val: 9, label: 'Sep' },
+    { val: 10, label: 'Oct' }, { val: 11, label: 'Nov' }, { val: 12, label: 'Dec' }
+  ];
+  
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const yearsArr = [];
+    for (let i = currentYear - 3; i <= currentYear + 1; i++) {
+      yearsArr.push(i);
+    }
+    return yearsArr;
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,20 +292,39 @@ const Sales: React.FC = () => {
   return (
     <div className="h-full">
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-             <h1 className="text-2xl font-black text-slate-800 dark:text-white">Sales Pipeline</h1>
-             <button 
-               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-               className={`p-2 rounded-xl transition-all ${isSettingsOpen ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white dark:bg-slate-900 text-gray-400 border border-gray-100 dark:border-slate-800'}`}
-               title="Pipeline Automations"
-             >
-                <Settings className="w-4 h-4" />
-             </button>
+        <div className="flex items-center gap-6">
+          <div>
+            <div className="flex items-center gap-3">
+               <h1 className="text-2xl font-black text-slate-800 dark:text-white">Sales Pipeline</h1>
+               <button 
+                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                 className={`p-2 rounded-xl transition-all ${isSettingsOpen ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white dark:bg-slate-900 text-gray-400 border border-gray-100 dark:border-slate-800'}`}
+                 title="Pipeline Automations"
+               >
+                  <Settings className="w-4 h-4" />
+               </button>
+            </div>
+            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">Lead Management & Funnel Tracking</p>
           </div>
-          <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">Lead Management & Funnel Tracking</p>
+
+          <div className="bg-white dark:bg-slate-900 p-1 rounded-2xl flex items-center shadow-sm border border-gray-100 dark:border-slate-800">
+            <button 
+              onClick={() => setView('board')} 
+              className={`p-2 rounded-xl transition-all ${view === 'board' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-indigo-600'}`}
+              title="Board View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => setView('dashboard')} 
+              className={`p-2 rounded-xl transition-all ${view === 'dashboard' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-indigo-600'}`}
+              title="Sales Dashboard"
+            >
+              <BarChart2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-        <button onClick={() => { setEditingProject(null); setFormData({ status: 'Cold', project_type: 'Servicing', budget: 0, kickoff_date: new Date().toISOString().split('T')[0], delivery_date: new Date().toISOString().split('T')[0], has_event: false }); setIsModalOpen(true); }} className="bg-[#0D2440] dark:bg-blue-600 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full text-[10px] font-black flex items-center transition-all shadow-lg transform active:scale-95">
+        <button onClick={() => { setEditingProject(null); setFormData({ status: 'Cold', project_type: 'Servicing', budget: 0, kickoff_date: new Date().toISOString().split('T')[0], delivery_date: new Date().toISOString().split('T')[0], has_event: false, lead_by: '' }); setIsModalOpen(true); }} className="bg-[#0D2440] dark:bg-blue-600 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full text-[10px] font-black flex items-center transition-all shadow-lg transform active:scale-95">
           <Plus className="w-4 h-4 mr-2" /> New Prospect
         </button>
       </div>
@@ -309,50 +401,285 @@ const Sales: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10 h-[calc(100vh-200px)]">
-        {(['Cold', 'Warm', 'Hot'] as ProjectStatus[]).map(status => (
-          <div 
-            key={status} 
-            className={`flex flex-col h-full transition-all duration-300 ${dragOverStatus === status ? 'scale-[1.01]' : ''}`}
-            onDragEnter={(e) => onDragEnter(e, status)}
-            onDragLeave={(e) => onDragLeave(e, status)}
-            onDragOver={onDragOver}
-            onDrop={(e) => onDrop(e, status)}
-          >
-            <div className="flex items-center justify-between px-3 mb-3">
-              <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${status === 'Cold' ? 'bg-gray-400' : status === 'Warm' ? 'bg-amber-400' : 'bg-rose-400'}`} />
-                {status} Leads
-              </h2>
-              <span className="text-[9px] font-black text-gray-400 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-full shadow-sm border border-gray-100 dark:border-slate-800">
-                {salesProjects.filter(p => p.status === status).length}
-              </span>
+      {view === 'board' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10 h-[calc(100vh-200px)]">
+          {(['Cold', 'Warm', 'Hot'] as ProjectStatus[]).map(status => (
+            <div 
+              key={status} 
+              className={`flex flex-col h-full transition-all duration-300 ${dragOverStatus === status ? 'scale-[1.01]' : ''}`}
+              onDragEnter={(e) => onDragEnter(e, status)}
+              onDragLeave={(e) => onDragLeave(e, status)}
+              onDragOver={onDragOver}
+              onDrop={(e) => onDrop(e, status)}
+            >
+              <div className="flex items-center justify-between px-3 mb-3">
+                <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${status === 'Cold' ? 'bg-gray-400' : status === 'Warm' ? 'bg-amber-400' : 'bg-rose-400'}`} />
+                  {status} Leads
+                </h2>
+                <span className="text-[9px] font-black text-gray-400 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-full shadow-sm border border-gray-100 dark:border-slate-800">
+                  {salesProjects.filter(p => p.status === status).length}
+                </span>
+              </div>
+              <div className={`space-y-4 flex-1 p-3 rounded-[2rem] border transition-colors duration-300 overflow-y-auto scrollbar-hide ${
+                dragOverStatus === status 
+                  ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-400 dark:border-indigo-600 border-dashed' 
+                  : 'bg-gray-50/50 dark:bg-slate-800/20 border-gray-100 dark:border-slate-800'
+              }`}>
+                {salesProjects.filter(p => p.status === status).map(project => (
+                  <ProjectCard 
+                    key={project.id} 
+                    project={project} 
+                    onEdit={(p) => { setEditingProject(p); setFormData(p); setIsModalOpen(true); }} 
+                    onGreenlight={(id) => setConfirmData({ id, type: 'greenlight' })}
+                    onLost={(id) => setConfirmData({ id, type: 'lost' })}
+                    canSeeFinancials={canSeeFinancials}
+                    taskCount={tasks.filter(t => String(t.project_id) === String(project.id)).length}
+                    tasks={tasks}
+                    thresholds={automationSettings.salesThresholds}
+                  />
+                ))}
+                {salesProjects.filter(p => p.status === status).length === 0 && (
+                  <div className="h-32 flex items-center justify-center text-[9px] font-black text-gray-300 uppercase italic">Empty Sector</div>
+                )}
+              </div>
             </div>
-            <div className={`space-y-4 flex-1 p-3 rounded-[2rem] border transition-colors duration-300 overflow-y-auto scrollbar-hide ${
-              dragOverStatus === status 
-                ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-400 dark:border-indigo-600 border-dashed' 
-                : 'bg-gray-50/50 dark:bg-slate-800/20 border-gray-100 dark:border-slate-800'
-            }`}>
-              {salesProjects.filter(p => p.status === status).map(project => (
-                <ProjectCard 
-                  key={project.id} 
-                  project={project} 
-                  onEdit={(p) => { setEditingProject(p); setFormData(p); setIsModalOpen(true); }} 
-                  onGreenlight={(id) => setConfirmData({ id, type: 'greenlight' })}
-                  onLost={(id) => setConfirmData({ id, type: 'lost' })}
-                  canSeeFinancials={canSeeFinancials}
-                  taskCount={tasks.filter(t => String(t.project_id) === String(project.id)).length}
-                  tasks={tasks}
-                  thresholds={automationSettings.salesThresholds}
-                />
-              ))}
-              {salesProjects.filter(p => p.status === status).length === 0 && (
-                <div className="h-32 flex items-center justify-center text-[9px] font-black text-gray-300 uppercase italic">Empty Sector</div>
-              )}
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-800">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl text-emerald-500">
+                  <DollarSign className="w-6 h-6" />
+                </div>
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Total Pipeline Value</h4>
+              </div>
+              <p className="text-4xl font-black text-slate-800 dark:text-white">
+                {canSeeFinancials ? `RM ${(dashboardStats.totalLeadValue / 1000).toFixed(1)}k` : 'CONFIDENTIAL'}
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                <TrendingUp className="w-3.5 h-3.5" />
+                {salesProjects.length} Active Leads
+              </div>
+            </div>
+
+            <div className="lg:col-span-3 bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-800">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl text-indigo-500">
+                    <Rocket className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Greenlighted Performance</h4>
+                    <p className="text-[8px] font-bold text-gray-300 uppercase tracking-tighter">Conversion Tracking</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 p-1.5 rounded-2xl border border-gray-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 px-3">
+                    <span className="text-[8px] font-black text-gray-400 uppercase">From</span>
+                    <div className="flex items-center gap-1">
+                      <select 
+                        value={filterStartMonth} 
+                        onChange={(e) => setFilterStartMonth(Number(e.target.value))}
+                        className="bg-transparent border-0 outline-none text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase cursor-pointer"
+                      >
+                        {months.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                      </select>
+                      <select 
+                        value={filterStartYear} 
+                        onChange={(e) => setFilterStartYear(Number(e.target.value))}
+                        className="bg-transparent border-0 outline-none text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase cursor-pointer"
+                      >
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="w-px h-4 bg-gray-200 dark:bg-slate-700" />
+                  <div className="flex items-center gap-2 px-3">
+                    <span className="text-[8px] font-black text-gray-400 uppercase">To</span>
+                    <div className="flex items-center gap-1">
+                      <select 
+                        value={filterEndMonth} 
+                        onChange={(e) => setFilterEndMonth(Number(e.target.value))}
+                        className="bg-transparent border-0 outline-none text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase cursor-pointer"
+                      >
+                        {months.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                      </select>
+                      <select 
+                        value={filterEndYear} 
+                        onChange={(e) => setFilterEndYear(Number(e.target.value))}
+                        className="bg-transparent border-0 outline-none text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase cursor-pointer"
+                      >
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <p className="text-4xl font-black text-slate-800 dark:text-white">
+                    {canSeeFinancials ? `RM ${(dashboardStats.greenlightedValue / 1000).toFixed(1)}k` : 'CONFIDENTIAL'}
+                  </p>
+                  <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+                    <CheckSquare className="w-3.5 h-3.5" />
+                    {dashboardStats.greenlightedCount} Projects Moved
+                  </div>
+                  <p className="mt-6 text-[9px] font-bold text-gray-400 uppercase leading-relaxed max-w-[200px]">
+                    Showing conversion data from {months.find(m => m.val === filterStartMonth)?.label} {filterStartYear} to {months.find(m => m.val === filterEndMonth)?.label} {filterEndYear}.
+                  </p>
+                </div>
+
+                <div className="h-[150px] w-full">
+                  {dashboardStats.greenlightedChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={dashboardStats.greenlightedChartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={60}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {dashboardStats.greenlightedChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][index % 6]} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-white dark:bg-slate-900 p-3 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800">
+                                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{payload[0].payload.name}</p>
+                                  <p className="text-xs font-black text-indigo-600 dark:text-indigo-400">
+                                    {canSeeFinancials ? `RM ${(Number(payload[0].value) / 1000).toFixed(1)}k` : 'CONFIDENTIAL'}
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-50 dark:border-slate-800 rounded-[2rem]">
+                      <p className="text-[10px] font-black text-gray-300 uppercase italic">No greenlights in range</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
+
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-800">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl text-indigo-500">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Lead Ownership & Distribution</h4>
+                <p className="text-[8px] font-bold text-gray-300 uppercase tracking-tighter">Value Share & Active Project Portfolio</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+              {/* Pie Chart Section */}
+              <div className="lg:col-span-4 flex flex-col justify-center border-r border-gray-50 dark:border-slate-800/50 pr-8">
+                <div className="h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={dashboardStats.chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {dashboardStats.chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][index % 6]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-800">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{payload[0].payload.name}</p>
+                                <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                                  {canSeeFinancials ? `RM ${(Number(payload[0].value) / 1000).toFixed(1)}k` : 'CONFIDENTIAL'}
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Total Pipeline Value</p>
+                  <p className="text-2xl font-black text-slate-800 dark:text-white text-center">
+                    {canSeeFinancials ? `RM ${(dashboardStats.totalLeadValue / 1000).toFixed(1)}k` : 'CONFIDENTIAL'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Distribution List Section */}
+              <div className="lg:col-span-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[450px] overflow-y-auto pr-2 scrollbar-hide">
+                  {dashboardStats.chartData.map((item, idx) => (
+                    <div key={idx} className="p-5 bg-gray-50 dark:bg-slate-800/50 rounded-[2rem] border border-gray-100 dark:border-slate-800 flex flex-col">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center border border-gray-100 dark:border-slate-700">
+                            <User className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <p className="text-xs font-black text-slate-800 dark:text-white">{item.name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400">
+                            {canSeeFinancials ? `RM ${(item.value / 1000).toFixed(1)}k` : 'CONFIDENTIAL'}
+                          </p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
+                            {((item.value / dashboardStats.totalLeadValue) * 100).toFixed(0)}% Share
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        {item.projects.map(p => (
+                          <Link key={p.id} to={`/projects/${p.id}`} className="block p-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[9px] font-black text-slate-700 dark:text-slate-300 truncate max-w-[140px]">{p.project_name}</span>
+                              <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase ${
+                                p.status === 'Hot' ? 'bg-rose-50 text-rose-500' : 
+                                p.status === 'Warm' ? 'bg-amber-50 text-amber-500' : 
+                                'bg-gray-100 text-gray-500'
+                              }`}>
+                                {p.status}
+                              </span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-[#0D2440]/40 dark:bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -373,6 +700,15 @@ const Sales: React.FC = () => {
               <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Tags</label><input placeholder="e.g. Urgent, Retainer, Video" className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold" value={formData.tags || ''} onChange={e => setFormData({...formData, tags: e.target.value})} /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Funnel Status</label><select className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold appearance-none cursor-pointer" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as ProjectStatus})}><option value="Cold">Cold</option><option value="Warm">Warm</option><option value="Hot">Hot</option></select></div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase">Lead By</label>
+                  <select className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold appearance-none cursor-pointer" value={formData.lead_by || ''} onChange={e => setFormData({...formData, lead_by: e.target.value})}>
+                    <option value="">Select Owner</option>
+                    {staff.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 {canSeeFinancials && <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Est. Revenue</label><input type="number" className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold" value={formData.budget || ''} onChange={e => setFormData({...formData, budget: Number(e.target.value)})} /></div>}
               </div>
               <div className="grid grid-cols-2 gap-4">

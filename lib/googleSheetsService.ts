@@ -196,7 +196,8 @@ class GoogleSheetsService {
         progress: Number(p.progress) || 0,
         has_event: String(p.has_event).toLowerCase() === 'true',
         kickoff_date: p.kickoff_date || '',
-        delivery_date: p.delivery_date || ''
+        delivery_date: p.delivery_date || '',
+        lead_by: p.lead_by || p.LeadBy || p['Lead By'] || ''
       }));
 
       const cleanedClaims = (data.claims || []).map((c: any) => ({

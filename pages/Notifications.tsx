@@ -24,7 +24,7 @@ const Notifications: React.FC = () => {
   const getTaskLink = (notification: any) => {
     if (notification.relatedId) {
       const task = tasks.find(t => String(t.id) === String(notification.relatedId));
-      if (task) return `/projects/${task.project_id}`;
+      if (task) return `/tasks/${task.id}`;
     }
     return null;
   };

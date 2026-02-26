@@ -51,9 +51,11 @@ const MyTasks: React.FC = () => {
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <h4 className={`font-black truncate ${isSmall ? 'text-sm' : 'text-base'} ${task.status === 'Done' ? 'text-gray-400 line-through' : 'text-slate-800 dark:text-white'}`}>
-            {task.task_name}
-          </h4>
+          <Link to={`/tasks/${task.id}`} className="group/title">
+            <h4 className={`font-black truncate ${isSmall ? 'text-sm' : 'text-base'} ${task.status === 'Done' ? 'text-gray-400 line-through' : 'text-slate-800 dark:text-white group-hover/title:text-indigo-600 transition-colors'}`}>
+              {task.task_name}
+            </h4>
+          </Link>
         </div>
         {!isSmall && task.task_description && (
           <p className="text-[11px] text-gray-400 mb-3 leading-relaxed font-medium line-clamp-2 italic">

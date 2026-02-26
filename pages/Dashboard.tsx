@@ -4,6 +4,7 @@ import { useProjects } from '../lib/ProjectContext';
 import { ArrowUpRight, PieChart, TrendingUp, Clock, Briefcase as BriefcaseIcon, Lock, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Wallet, CreditCard, Activity, ChevronDown, ListFilter, X, User } from 'lucide-react';
 import { Project } from '../types';
 import { Link } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const DashboardCalendar: React.FC<{ projects: Project[] }> = ({ projects }) => {
   const [currentDate, setcurrentDate] = useState(new Date());
@@ -83,11 +84,11 @@ const DashboardCalendar: React.FC<{ projects: Project[] }> = ({ projects }) => {
           </div>
        </div>
 
-       <div className="grid grid-cols-7 gap-2 mb-2">
-          {['S','M','T','W','T','F','S'].map(d => (
-            <div key={d} className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest py-2">{d}</div>
-          ))}
-       </div>
+        <div className="grid grid-cols-7 gap-2 mb-2">
+           {['S','M','T','W','T','F','S'].map((d, i) => (
+             <div key={`${d}-${i}`} className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest py-2">{d}</div>
+           ))}
+        </div>
 
        <div className="grid grid-cols-7 gap-2">
           {days.map((day, idx) => {
@@ -172,6 +173,124 @@ const StatCarousel: React.FC<{ projects: Project[], emptyText: string, label: st
             {i < index && <div className="absolute inset-0 bg-indigo-300 dark:bg-indigo-700/50 rounded-full" />}
           </div>
         ))}
+      </div>
+    </div>
+  );
+};
+
+const DashboardCharts: React.FC<{ projects: Project[], tasks: any[] }> = ({ projects, tasks }) => {
+  const ongoingProjectsData = useMemo(() => {
+    const ongoingList = projects.filter((p) => ['Pre Prod', 'Development', 'Closure'].includes(p.status));
+    return ongoingList.map(p => {
+      const ongoingTasksCount = tasks.filter(t => String(t.project_id) === String(p.id) && t.status !== 'Done').length;
+      return {
+        name: p.project_name,
+        tasks: ongoingTasksCount,
+        fullName: p.project_name
+      };
+    }).sort((a, b) => b.tasks - a.tasks).slice(0, 8); // Top 8 for readability
+  }, [projects, tasks]);
+
+  const salesPipelineData = useMemo(() => {
+    const salesList = projects.filter((p) => ['Warm', 'Hot'].includes(p.status));
+    return salesList.map(p => {
+      const ongoingTasksCount = tasks.filter(t => String(t.project_id) === String(p.id) && t.status !== 'Done').length;
+      return {
+        name: p.project_name,
+        tasks: ongoingTasksCount,
+        status: p.status,
+        fullName: p.project_name
+      };
+    }).sort((a, b) => b.tasks - a.tasks).slice(0, 8);
+  }, [projects, tasks]);
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-800">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{payload[0].payload.fullName}</p>
+          <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">{payload[0].value} Ongoing Tasks</p>
+          {payload[0].payload.status && (
+             <p className="text-[8px] font-black text-gray-300 uppercase mt-1">Status: {payload[0].payload.status}</p>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Ongoing Projects Chart */}
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-gray-100 dark:border-slate-800">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-500">
+            <Activity className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-widest text-xs">Ongoing Projects Load</h3>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Active Tasks per Delivery Project</p>
+          </div>
+        </div>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={ongoingProjectsData} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 8, fontWeight: 900, fill: '#94a3b8' }} 
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+              />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc', radius: 12 }} />
+              <Bar dataKey="tasks" radius={[6, 6, 0, 0]} barSize={32}>
+                {ongoingProjectsData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill="#6366f1" />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Sales Pipeline Chart */}
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-gray-100 dark:border-slate-800">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center text-rose-500">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-widest text-xs">Sales Pipeline Load</h3>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Active Tasks for Warm & Hot Leads</p>
+          </div>
+        </div>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={salesPipelineData} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 8, fontWeight: 900, fill: '#94a3b8' }} 
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+              />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc', radius: 12 }} />
+              <Bar dataKey="tasks" radius={[6, 6, 0, 0]} barSize={32}>
+                {salesPipelineData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.status === 'Hot' ? '#f43f5e' : '#fbbf24'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
@@ -344,7 +463,10 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 2: Timeline */}
+      {/* Row 2: Charts */}
+      <DashboardCharts projects={projects} tasks={tasks} />
+
+      {/* Row 3: Timeline */}
       <div className="w-full">
          <DashboardCalendar projects={stats.ongoingList} />
       </div>
