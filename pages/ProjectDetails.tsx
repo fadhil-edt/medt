@@ -5,6 +5,7 @@ import { useProjects } from '../lib/ProjectContext';
 import { DollarSign, CheckCircle2, Circle, ArrowLeft, Plus, X, ChevronDown, Rocket, Clock, User, Edit3, Layers, GripVertical, Calendar, Lock, Globe, Building2, Phone, UserPlus, Tag, RefreshCw, AlignLeft, BarChart2, LayoutGrid } from 'lucide-react';
 import { Task, ProjectStatus, Project, ProjectType, TaskPriority } from '../types';
 import { FigmaIcon, GDriveIcon } from '../components/BrandIcons';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const RadialScopeSelector: React.FC<{
   value: number;
@@ -99,6 +100,7 @@ const ProjectDetails: React.FC = () => {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isProjectEditOpen, setIsProjectEditOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [confirmData, setConfirmData] = useState<{ id: string; type: 'greenlight' | 'lost' } | null>(null);
   const [newTaskData, setNewTaskData] = useState<Partial<Task>>({ 
     task_name: '', 
     task_description: '',
@@ -129,6 +131,13 @@ const ProjectDetails: React.FC = () => {
     e.preventDefault();
     if (project && projectFormData) updateProject({ ...project, ...projectFormData } as Project);
     setIsProjectEditOpen(false);
+  };
+
+  const handleActionConfirm = () => {
+    if (!confirmData) return;
+    updateProjectStatus(confirmData.id, confirmData.type === 'greenlight' ? 'Pre Prod' : 'Lost');
+    setConfirmData(null);
+    if (confirmData.type === 'lost') navigate('/sales');
   };
 
   // Show loading while cloud sync is active and project is not found yet
@@ -167,69 +176,106 @@ const ProjectDetails: React.FC = () => {
         <ArrowLeft className="w-4 h-4 mr-1" /> Back
       </button>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-800 p-8 mb-10 overflow-hidden relative">
-        <div className="flex justify-between items-start mb-8 relative z-10">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em]">{project.client_name}</span>
-              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded shadow-sm ${project.project_type === 'Internal' ? 'bg-purple-100 text-purple-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                {project.project_type}
-              </span>
-              {project.tags && <span className="flex items-center gap-1 text-[9px] font-black text-gray-400 uppercase border border-gray-200 px-2 py-0.5 rounded-full"><Tag className="w-2.5 h-2.5"/> {project.tags}</span>}
-            </div>
-            <div className="flex items-center gap-4 mt-2 mb-6">
-              <h1 className="text-4xl font-black text-gray-900 dark:text-white">{project.project_name}</h1>
-              <button onClick={() => setIsProjectEditOpen(true)} className="p-2 bg-gray-50 dark:bg-slate-800 text-gray-400 hover:text-blue-500 rounded-xl transition-all shadow-sm"><Edit3 className="w-5 h-5" /></button>
-            </div>
-            
-            <div className="flex flex-wrap gap-6 mb-8">
-               <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gray-50 dark:bg-slate-800 rounded-2xl"><UserPlus className="w-4.5 h-4.5 text-indigo-500" /></div>
-                  <div>
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Client Contact</p>
-                    <p className="text-xs font-black text-slate-800 dark:text-slate-200">{project.contact_person || 'Not set'}</p>
-                  </div>
-               </div>
-               <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gray-50 dark:bg-slate-800 rounded-2xl"><Phone className="w-4.5 h-4.5 text-emerald-500" /></div>
-                  <div>
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Phone / Mobile</p>
-                    <p className="text-xs font-black text-slate-800 dark:text-slate-200">{project.contact_phone || 'Not set'}</p>
-                  </div>
-               </div>
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-slate-800 mb-10 overflow-hidden relative min-h-[400px] flex flex-col justify-end">
+        {/* Cover Image Background */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={project.cover_image || `https://picsum.photos/seed/${project.id}/1200/600`} 
+            alt={project.project_name}
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-slate-900/20" />
+        </div>
+
+        <div className="p-10 relative z-10">
+          <div className="flex justify-between items-end gap-8">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs font-black text-indigo-400 uppercase tracking-[0.2em]">{project.client_name}</span>
+                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded shadow-sm ${project.project_type === 'Internal' ? 'bg-purple-500 text-white' : 'bg-emerald-500 text-white'}`}>
+                  {project.project_type}
+                </span>
+                {project.tags && <span className="flex items-center gap-1 text-[9px] font-black text-white/60 uppercase border border-white/20 px-2 py-0.5 rounded-full backdrop-blur-md"><Tag className="w-2.5 h-2.5"/> {project.tags}</span>}
+              </div>
+              
+              <div className="flex items-center gap-4 mb-8">
+                <h1 className="text-5xl font-black text-white drop-shadow-xl">{project.project_name}</h1>
+                <button onClick={() => setIsProjectEditOpen(true)} className="p-2.5 bg-white/10 backdrop-blur-md text-white/60 hover:text-white rounded-xl transition-all border border-white/10"><Edit3 className="w-5 h-5" /></button>
+              </div>
+              
+              <div className="flex flex-wrap gap-8 mb-8">
+                 <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10"><UserPlus className="w-4.5 h-4.5 text-indigo-400" /></div>
+                    <div>
+                      <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Client Contact</p>
+                      <p className="text-sm font-black text-white">{project.contact_person || 'Not set'}</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10"><Phone className="w-4.5 h-4.5 text-emerald-400" /></div>
+                    <div>
+                      <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Phone / Mobile</p>
+                      <p className="text-sm font-black text-white">{project.contact_phone || 'Not set'}</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10"><DollarSign className="w-4.5 h-4.5 text-amber-400" /></div>
+                    <div>
+                      <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Budget</p>
+                      <p className="text-sm font-black text-white">
+                        {permissions[currentUserRole].viewFinancials ? `RM ${project.budget.toLocaleString()}` : 'CONFIDENTIAL'}
+                      </p>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="flex flex-wrap gap-4">
+                {project.figma_link && (
+                  <a href={project.figma_link} target="_blank" rel="noreferrer" className="flex items-center bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 text-white hover:bg-white/20 transition-all">
+                    <FigmaIcon className="w-4 h-4 mr-2" />
+                    <span className="text-xs font-black uppercase tracking-widest">Figma Design</span>
+                  </a>
+                )}
+                {project.gdrive_link && (
+                  <a href={project.gdrive_link} target="_blank" rel="noreferrer" className="flex items-center bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 text-white hover:bg-white/20 transition-all">
+                    <GDriveIcon className="w-4 h-4 mr-2" />
+                    <span className="text-xs font-black uppercase tracking-widest">Project Drive</span>
+                  </a>
+                )}
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center bg-indigo-50 dark:bg-indigo-900/10 px-4 py-2 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
-                <DollarSign className="w-4 h-4 mr-2 text-indigo-500" />
-                <span className="text-sm font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-                  {permissions[currentUserRole].viewFinancials ? `RM ${project.budget.toLocaleString()}` : 'CONFIDENTIAL'}
-                </span>
+            <div className="flex flex-col items-end gap-4">
+              <div className="text-right">
+                <label className="block text-[10px] font-black text-white/40 uppercase mb-3 tracking-[0.1em]">Pipeline Stage</label>
+                <div className="relative">
+                  <select 
+                    value={project.status} onChange={(e) => updateProjectStatus(project.id, e.target.value as ProjectStatus)}
+                    className="appearance-none bg-white/10 backdrop-blur-md border-2 border-white/10 text-white text-sm font-black rounded-2xl px-8 py-3.5 pr-14 focus:outline-none transition-all cursor-pointer shadow-xl text-center"
+                  >
+                    {['Cold', 'Warm', 'Hot', 'Pre Prod', 'Development', 'Closure', 'Completed', 'Lost'].map(s => <option key={s} value={s} className="bg-slate-900 text-white">{s}</option>)}
+                  </select>
+                  <ChevronDown className="w-5 h-5 text-white/40 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
-              {project.figma_link && (
-                <a href={project.figma_link} target="_blank" rel="noreferrer" className="flex items-center bg-gray-50 dark:bg-slate-800 px-4 py-2 rounded-2xl border border-gray-100 hover:bg-indigo-500 hover:text-white transition-all">
-                  <FigmaIcon className="w-4 h-4 mr-2" />
-                  <span className="text-xs font-black uppercase">Figma</span>
-                </a>
+
+              {['Cold', 'Warm', 'Hot'].includes(project.status) && (
+                <div className="flex gap-3 mt-4">
+                  <button 
+                    onClick={() => setConfirmData({ id: project.id, type: 'greenlight' })}
+                    className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl active:scale-95"
+                  >
+                    <Rocket className="w-4 h-4" /> Greenlight Project
+                  </button>
+                  <button 
+                    onClick={() => setConfirmData({ id: project.id, type: 'lost' })}
+                    className="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-md text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 transition-all shadow-xl border border-white/10"
+                  >
+                    <X className="w-4 h-4" /> Mark Lost
+                  </button>
+                </div>
               )}
-              {project.gdrive_link && (
-                <a href={project.gdrive_link} target="_blank" rel="noreferrer" className="flex items-center bg-gray-50 dark:bg-slate-800 px-4 py-2 rounded-2xl border border-gray-100 hover:bg-blue-500 hover:text-white transition-all">
-                  <GDriveIcon className="w-4 h-4 mr-2" />
-                  <span className="text-xs font-black uppercase">Drive</span>
-                </a>
-              )}
-            </div>
-          </div>
-          <div className="text-right ml-4">
-            <label className="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-[0.1em]">Pipeline Stage</label>
-            <div className="relative">
-              <select 
-                value={project.status} onChange={(e) => updateProjectStatus(project.id, e.target.value as ProjectStatus)}
-                className="appearance-none bg-white dark:bg-slate-800 border-2 border-indigo-100 dark:border-slate-700 text-indigo-700 dark:text-indigo-400 text-sm font-black rounded-2xl px-6 py-3 pr-12 focus:outline-none transition-all cursor-pointer shadow-sm text-center"
-              >
-                {['Cold', 'Warm', 'Hot', 'Pre Prod', 'Development', 'Closure', 'Completed', 'Lost'].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <ChevronDown className="w-4 h-4 text-indigo-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -293,6 +339,7 @@ const ProjectDetails: React.FC = () => {
                 <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Contact Phone</label><input className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none dark:text-white font-bold" value={projectFormData.contact_phone || ''} onChange={e => setProjectFormData({...projectFormData, contact_phone: e.target.value})} /></div>
               </div>
               <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Tags (Comma Separated)</label><input className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none dark:text-white font-bold" value={projectFormData.tags || ''} onChange={e => setProjectFormData({...projectFormData, tags: e.target.value})} /></div>
+              <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Cover Image URL</label><input className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 outline-none dark:text-white font-bold" value={projectFormData.cover_image || ''} onChange={e => setProjectFormData({...projectFormData, cover_image: e.target.value})} /></div>
               <div className="pt-8 flex justify-end gap-4">
                 <button type="button" onClick={() => setIsProjectEditOpen(false)} className="px-6 py-3 text-xs font-black uppercase text-gray-400">Cancel</button>
                 <button type="submit" className="px-10 py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs">Update Cloud</button>
@@ -374,6 +421,18 @@ const ProjectDetails: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal 
+        isOpen={!!confirmData}
+        onClose={() => setConfirmData(null)}
+        onConfirm={handleActionConfirm}
+        title={confirmData?.type === 'greenlight' ? 'Greenlight Project?' : 'Mark Project as Lost?'}
+        message={confirmData?.type === 'greenlight' 
+          ? 'This will move the project to Pre-Production and signify a successful sale.' 
+          : 'This will move the project to the Lost category and archive it.'}
+        confirmLabel={confirmData?.type === 'greenlight' ? 'Greenlight' : 'Mark Lost'}
+        confirmColor={confirmData?.type === 'greenlight' ? 'emerald' : 'rose'}
+      />
     </div>
   );
 };

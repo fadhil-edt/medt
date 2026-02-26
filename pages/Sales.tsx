@@ -11,13 +11,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const ProjectCard: React.FC<{ 
   project: Project; 
   onEdit: (p: Project) => void;
-  onGreenlight: (id: string) => void;
-  onLost: (id: string) => void;
   canSeeFinancials: boolean;
   taskCount: number;
   tasks: Task[];
   thresholds: { hotToWarm: number; warmToCold: number; coldStagnant: number };
-}> = ({ project, onEdit, onGreenlight, onLost, canSeeFinancials, taskCount, tasks, thresholds }) => {
+}> = ({ project, onEdit, canSeeFinancials, taskCount, tasks, thresholds }) => {
   const statusMap: Record<ProjectStatus, { text: string; bg: string }> = {
     'Cold': { text: 'Cold', bg: 'bg-gray-100 dark:bg-slate-800 text-gray-500' },
     'Warm': { text: 'Warm', bg: 'bg-amber-50 dark:bg-amber-900/20 text-amber-500' },
@@ -62,87 +60,86 @@ const ProjectCard: React.FC<{
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`bg-white dark:bg-slate-900 p-4 rounded-[2rem] shadow-sm border hover:shadow-lg transition-all group relative animate-in slide-in-from-bottom-2 cursor-grab active:cursor-grabbing ${isStagnant ? 'border-amber-200 dark:border-amber-900/50' : 'border-gray-100 dark:border-slate-800'}`}
+      className={`group relative h-[320px] rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 animate-in slide-in-from-bottom-2 cursor-grab active:cursor-grabbing border-2 ${isStagnant ? 'border-amber-400/50' : 'border-transparent'}`}
     >
-      {isStagnant && (
-        <div className="absolute -top-2 -right-1 z-10 flex items-center gap-1 bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-tighter border border-amber-200 dark:border-amber-800 shadow-sm animate-pulse">
-           <AlertCircle className="w-2 h-2" /> {project.status === 'Cold' ? 'POTENTIALLY LOST' : `STAGNANT ${diffDays}d`}
-        </div>
-      )}
-
-      <div className="flex items-start gap-3 mb-2">
-        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 flex flex-shrink-0 items-center justify-center font-black text-xs text-indigo-600">
-           {project.client_name.charAt(0)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 line-clamp-1 leading-tight">
-            {project.project_name}
-          </h4>
-          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest truncate">{project.client_name}</p>
-        </div>
-        <div className="flex flex-col gap-1 items-center">
-          <GripVertical className="w-3.5 h-3.5 text-gray-200" />
-          <button onClick={() => onEdit(project)} className="p-1 rounded-lg text-gray-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all">
-            <Edit3 className="w-3 h-3" />
-          </button>
-        </div>
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={project.cover_image || `https://picsum.photos/seed/${project.id}/400/600`} 
+          alt={project.project_name}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 mb-3">
-        <Link to={`/projects/${project.id}`} className="flex items-center gap-1 px-2 py-1 bg-gray-50 dark:bg-slate-800 rounded-lg text-[8px] font-black text-gray-400 uppercase transition-all hover:bg-indigo-50 hover:text-indigo-600 border border-transparent hover:border-indigo-100">
-          <ExternalLink className="w-2.5 h-2.5" /> Details
-        </Link>
-        <Link to={`/projects/${project.id}`} className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-slate-800 rounded-lg text-[8px] font-black text-blue-600 uppercase transition-all hover:bg-blue-600 hover:text-white border border-blue-100 dark:border-slate-700">
-          <CheckSquare className="w-2.5 h-2.5" /> {taskCount} Tasks
-        </Link>
-      </div>
-
-      <div className="flex gap-1.5 mb-3">
-         <a href={project.figma_link || '#'} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[8px] font-black uppercase hover:bg-gray-100 transition-all shadow-sm border border-gray-100 dark:border-slate-800">
-            <FigmaIcon className="w-2.5 h-2.5" /> Figma
-         </a>
-         <a href={project.gdrive_link || '#'} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[8px] font-black uppercase hover:bg-gray-100 transition-all shadow-sm border border-gray-100 dark:border-slate-800">
-            <GDriveIcon className="w-2.5 h-2.5" /> Drive
-         </a>
-      </div>
-
-      <div className="bg-gray-50 dark:bg-slate-800/30 rounded-xl p-2 mb-3 border border-gray-100 dark:border-slate-800/50 flex items-center justify-between">
-         <div className="flex items-center gap-2 truncate">
-            <User className="w-2.5 h-2.5 text-indigo-400" />
-            <span className="text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest truncate">{project.contact_person || 'N/A'}</span>
-         </div>
-         <div className="flex items-center gap-2">
-            <Users className="w-2.5 h-2.5 text-blue-400" />
-            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">{project.lead_by || 'Unknown'}</span>
-         </div>
-      </div>
-
-      <div className="flex justify-between items-center mb-4 text-[9px] font-bold">
-        <div className="flex flex-col">
-          <span className="text-gray-400 uppercase tracking-widest leading-none mb-1">Revenue</span>
-          <span className="text-slate-800 dark:text-slate-300 leading-none">
-            {canSeeFinancials ? `RM ${(project.budget/1000).toFixed(1)}k` : <Lock className="w-2.5 h-2.5 opacity-30" />}
-          </span>
+      {/* Content */}
+      <div className="absolute inset-0 z-10 p-6 flex flex-col justify-between">
+        <div className="flex justify-between items-start">
+          <div className="flex flex-col gap-1.5">
+            <span className={`text-[8px] font-black uppercase px-2.5 py-1 rounded-lg w-fit shadow-sm ${currentStatus.bg}`}>
+              {currentStatus.text}
+            </span>
+            <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-md w-fit bg-white/20 backdrop-blur-md text-white border border-white/10`}>
+              {project.project_type === 'Internal' ? 'INT' : 'SVC'}
+            </span>
+            {isStagnant && (
+              <span className="flex items-center gap-1 bg-amber-400 text-amber-950 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-tighter animate-pulse">
+                <AlertCircle className="w-2 h-2" /> Stagnant {diffDays}d
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity items-center">
+            {project.figma_link && (
+              <a href={project.figma_link} target="_blank" rel="noreferrer" className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white hover:bg-white/40 transition-all border border-white/10" title="Figma">
+                <FigmaIcon className="w-4 h-4" />
+              </a>
+            )}
+            {project.gdrive_link && (
+              <a href={project.gdrive_link} target="_blank" rel="noreferrer" className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white hover:bg-white/40 transition-all border border-white/10" title="Drive">
+                <GDriveIcon className="w-4 h-4" />
+              </a>
+            )}
+            <button onClick={() => onEdit(project)} className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white hover:bg-white/40 transition-all border border-white/10" title="Edit">
+              <Edit3 className="w-4 h-4" />
+            </button>
+            <GripVertical className="w-4 h-4 text-white/40" />
+          </div>
         </div>
-        <div className="flex flex-col text-right">
-          <span className="text-gray-400 uppercase tracking-widest leading-none mb-1">Status</span>
-          <span className={`px-2 py-0.5 rounded-full font-black ${currentStatus.bg}`}>{currentStatus.text}</span>
-        </div>
-      </div>
 
-      <div className="flex gap-2">
-        <button 
-          onClick={() => onGreenlight(project.id)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-emerald-500 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-sm"
-        >
-          <Rocket className="w-2.5 h-2.5" /> Greenlight
-        </button>
-        <button 
-          onClick={() => onLost(project.id)}
-          className="px-3 py-1.5 bg-rose-50 text-rose-500 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-rose-100"
-        >
-          Lost
-        </button>
+        <div>
+          <div className="space-y-1 mb-6">
+            <h4 className="text-xl font-black text-white leading-tight drop-shadow-lg">
+              {project.project_name}
+            </h4>
+            <p className="text-[10px] text-white/70 font-bold uppercase tracking-[0.2em] drop-shadow-md">
+              {project.client_name}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Tasks</span>
+                <span className="text-xs font-black text-white">{taskCount}</span>
+              </div>
+              <div className="w-px h-6 bg-white/10" />
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Value</span>
+                <span className="text-xs font-black text-white">
+                  {canSeeFinancials ? `RM ${(project.budget/1000).toFixed(1)}k` : '•••'}
+                </span>
+              </div>
+            </div>
+            
+            <Link 
+              to={`/projects/${project.id}`}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all shadow-xl active:scale-95"
+            >
+              View Details <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -174,6 +171,7 @@ const Sales: React.FC = () => {
     has_event: false,
     figma_link: '',
     gdrive_link: '',
+    cover_image: '',
     contact_person: '',
     contact_phone: '',
     tags: '',
@@ -324,7 +322,7 @@ const Sales: React.FC = () => {
             </button>
           </div>
         </div>
-        <button onClick={() => { setEditingProject(null); setFormData({ status: 'Cold', project_type: 'Servicing', budget: 0, kickoff_date: new Date().toISOString().split('T')[0], delivery_date: new Date().toISOString().split('T')[0], has_event: false, lead_by: '' }); setIsModalOpen(true); }} className="bg-[#0D2440] dark:bg-blue-600 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full text-[10px] font-black flex items-center transition-all shadow-lg transform active:scale-95">
+        <button onClick={() => { setEditingProject(null); setFormData({ status: 'Cold', project_type: 'Servicing', budget: 0, kickoff_date: new Date().toISOString().split('T')[0], delivery_date: new Date().toISOString().split('T')[0], has_event: false, lead_by: '', cover_image: '' }); setIsModalOpen(true); }} className="bg-[#0D2440] dark:bg-blue-600 hover:bg-slate-800 text-white px-6 py-2.5 rounded-full text-[10px] font-black flex items-center transition-all shadow-lg transform active:scale-95">
           <Plus className="w-4 h-4 mr-2" /> New Prospect
         </button>
       </div>
@@ -431,8 +429,6 @@ const Sales: React.FC = () => {
                     key={project.id} 
                     project={project} 
                     onEdit={(p) => { setEditingProject(p); setFormData(p); setIsModalOpen(true); }} 
-                    onGreenlight={(id) => setConfirmData({ id, type: 'greenlight' })}
-                    onLost={(id) => setConfirmData({ id, type: 'lost' })}
                     canSeeFinancials={canSeeFinancials}
                     taskCount={tasks.filter(t => String(t.project_id) === String(project.id)).length}
                     tasks={tasks}
@@ -698,6 +694,7 @@ const Sales: React.FC = () => {
                 <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Phone #</label><input className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold" value={formData.contact_phone || ''} onChange={e => setFormData({...formData, contact_phone: e.target.value})} /></div>
               </div>
               <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Tags</label><input placeholder="e.g. Urgent, Retainer, Video" className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold" value={formData.tags || ''} onChange={e => setFormData({...formData, tags: e.target.value})} /></div>
+              <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Cover Image URL</label><input placeholder="https://images.unsplash.com/..." className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold" value={formData.cover_image || ''} onChange={e => setFormData({...formData, cover_image: e.target.value})} /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2"><label className="text-xs font-black text-gray-400 uppercase">Funnel Status</label><select className="w-full px-5 py-3 rounded-2xl bg-gray-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-400 outline-none dark:text-white font-bold appearance-none cursor-pointer" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as ProjectStatus})}><option value="Cold">Cold</option><option value="Warm">Warm</option><option value="Hot">Hot</option></select></div>
                 <div className="space-y-2">
