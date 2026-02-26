@@ -218,9 +218,14 @@ class GoogleSheetsService {
 
       const cleanedStaff = (data.staff || []).map((s: any) => ({
         ...s,
-        id: String(s.id),
+        id: String(s.id || s.Id || s.ID || ''),
+        name: s.name || s.Name || '',
+        email: s.email || s.Email || '',
+        role: s.role || s.Role || '',
+        role_type: s.role_type || s.RoleType || s.roleType || s['Role Type'] || 'Staff',
         password: s.password || s.Password || '',
-        weekly_capacity: Number(s.weekly_capacity) || 0
+        weekly_capacity: Number(s.weekly_capacity || s.WeeklyCapacity || s['Weekly Capacity']) || 0,
+        active_tasks: Number(s.active_tasks || s.ActiveTasks || s['Active Tasks']) || 0
       }));
 
       const finalData = { 

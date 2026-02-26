@@ -367,15 +367,21 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       return;
     }
 
-    let user = staff.find(s => s.email.toLowerCase() === cleanInput);
+    let user = staff.find(s => 
+      (s.email && s.email.toLowerCase() === cleanInput) || 
+      (s.name && s.name.toLowerCase() === cleanInput)
+    );
     
-    if (!user && cleanInput.includes('@')) {
+    if (!user) {
       const data = await cloudService.fetchWorkspaceData();
       if (data.staff) {
         const otherStaff = data.staff.filter((s: Staff) => String(s.id) !== SUPER_ADMIN_ID);
         const list = [SUPER_ADMIN_OBJ, ...otherStaff];
         setStaff(list);
-        user = list.find(s => s.email.toLowerCase() === cleanInput);
+        user = list.find(s => 
+          (s.email && s.email.toLowerCase() === cleanInput) || 
+          (s.name && s.name.toLowerCase() === cleanInput)
+        );
       }
     }
 
